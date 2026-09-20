@@ -200,4 +200,62 @@ footer {
 .date-tache {
     color: #818cf8;
     font-size: 13px;
+}.notification-card {
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 20px;
+    padding: 20px;
+    margin-bottom: 25px;
+    text-align: center;
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.25);
+}
+
+.notification-card p {
+    color: #94a3b8;
+    margin-bottom: 15px;
+}.parametres {
+    position: relative;
+    margin-bottom: 25px;
+}
+
+.bouton-parametres {
+    width: auto;
+    padding: 10px 16px;
+    background: #1e293b;
+    border: 1px solid #334155;
+}
+
+.bouton-parametres:hover {
+    background: #334155;
+    transform: none;
+}
+
+.menu-parametres {
+    display: none;
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 16px;
+    padding: 20px;
+    margin-top: 10px;
+}
+
+.menu-parametres.ouvert {
+    display: block;
+}
+
+.menu-parametres h3 {
+    margin-bottom: 18px;
+}
+
+.option-parametre {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 15px;
+}
+
+.petit-bouton {
+    width: auto;
+    padding: 8px 14px;
+    font-size: 14px;
 }
