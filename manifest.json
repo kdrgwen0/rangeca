@@ -1,0 +1,17 @@
+{
+  "name": "RangeÇa",
+  "short_name": "RangeÇa",
+  "description": "Transforme ton bazar en quelque chose de clair.",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#6366f1",
+  "lang": "fr",
+  "icons": [
+    {
+      "src": "logorc.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
