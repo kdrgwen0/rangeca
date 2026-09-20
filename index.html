@@ -1,36 +1,60 @@
 <!DOCTYPE html>
-
 <html lang="fr">
+
 <head>
+
     <meta charset="UTF-8">
+
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
     <title>RangeÇa 🧹</title>
 
-```
-<link rel="stylesheet" href="style.css">
-```
+    <!-- Style du site -->
+    <link rel="stylesheet" href="style.css">
+
+    <!-- Application PWA -->
+    <link rel="manifest" href="./manifest.json">
+
+    <!-- Icône iPhone -->
+    <link rel="apple-touch-icon" href="./logorc.png">
+
+    <!-- Couleur de l'application -->
+    <meta name="theme-color" content="#6366f1">
 
 </head>
 
+
 <body>
 
-```
-<div class="container">
+    <div class="container">
 
-    <header>
-        <div class="logo">🧹 RangeÇa</div>
-        <p>Transforme ton bazar en quelque chose de clair.</p>
-    </header>
+        <header>
 
-    <main>
+            <div class="logo">
+                🧹 RangeÇa
+            </div>
 
-        <section class="input-card">
-            <h2>📝 Qu'est-ce que tu dois ranger ?</h2>
+            <p>
+                Transforme ton bazar en quelque chose de clair.
+            </p>
 
-            <textarea
-                id="texte"
-                placeholder="Écris tout ce que tu as en tête...
-```
+        </header>
+
+
+        <main>
+
+            <!-- ZONE POUR AJOUTER LES INFORMATIONS -->
+
+            <section class="input-card">
+
+                <h2>
+                    📝 Qu'est-ce que tu dois ranger ?
+                </h2>
+
+
+                <textarea
+                    id="texte"
+                    placeholder="Écris tout ce que tu as en tête...
 
 Exemple :
 Contrôle maths mardi
@@ -38,34 +62,57 @@ Acheter du lait
 Devoir anglais vendredi
 Jouer à GTA
 Acheter des chaussures"
-></textarea>
+                ></textarea>
 
-```
-            <button onclick="ranger()">
-                ✨ Ranger mes informations
-            </button>
-        </section>
 
-        <section class="result-card">
-            <h2>📋 Résultat</h2>
+                <button onclick="ranger()">
+                    ✨ Ranger mes informations
+                </button>
 
-            <div id="resultat">
-                <p class="empty">
-                    Ton classement apparaîtra ici...
-                </p>
-            </div>
-        </section>
+            </section>
 
-    </main>
 
-    <footer>
-        <p>RangeÇa — Simple. Clair. Organisé. 🧹</p>
-    </footer>
 
-</div>
+            <!-- RÉSULTATS -->
 
-<script src="script.js"></script>
-```
+            <section class="result-card">
+
+                <h2>
+                    📋 Résultat
+                </h2>
+
+
+                <div id="resultat">
+
+                    <p class="empty">
+                        Ton classement apparaîtra ici...
+                    </p>
+
+                </div>
+
+            </section>
+
+        </main>
+
+
+
+        <footer>
+
+            <p>
+                RangeÇa — Simple. Clair. Organisé. 🧹
+            </p>
+
+        </footer>
+
+    </div>
+
+
+
+    <!-- JavaScript -->
+
+    <script src="./script.js"></script>
+
 
 </body>
+
 </html>
