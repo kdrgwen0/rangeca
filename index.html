@@ -41,13 +41,59 @@
         </header>
 
 
+        <!-- Paramètres -->
+
+        <div class="parametres">
+
+            <button
+                onclick="ouvrirParametres()"
+                class="bouton-parametres"
+            >
+                ⚙️ Paramètres
+            </button>
+
+
+            <div
+                id="menuParametres"
+                class="menu-parametres"
+            >
+
+                <h3>
+                    ⚙️ Paramètres
+                </h3>
+
+
+                <div class="option-parametre">
+
+                    <span>
+                        🔔 Notifications
+                    </span>
+
+                    <button
+                        onclick="activerNotifications()"
+                        id="boutonNotifications"
+                        class="petit-bouton"
+                    >
+                        Activer
+                    </button>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
         <main>
+
+            <!-- Zone de saisie -->
 
             <section class="input-card">
 
                 <h2>
                     📝 Qu'est-ce que tu dois ranger ?
                 </h2>
+
 
                 <textarea
                     id="texte"
@@ -61,6 +107,7 @@ Jouer à GTA
 Acheter des chaussures"
                 ></textarea>
 
+
                 <button onclick="ranger()">
                     ✨ Ranger mes informations
                 </button>
@@ -68,11 +115,14 @@ Acheter des chaussures"
             </section>
 
 
+            <!-- Résultats -->
+
             <section class="result-card">
 
                 <h2>
                     📋 Résultat
                 </h2>
+
 
                 <div id="resultat">
 
@@ -99,6 +149,7 @@ Acheter des chaussures"
 
 
     <!-- JavaScript -->
+
     <script src="./script.js"></script>
 
 </body>
