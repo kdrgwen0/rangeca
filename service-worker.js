@@ -1,4 +1,4 @@
-const CACHE_NAME = "rangeca-v1";
+const CACHE_NAME = "rangeca-v2";
 
 const fichiers = [
     "./",
