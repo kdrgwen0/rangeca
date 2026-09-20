@@ -4,7 +4,7 @@
 
 const SUPABASE_URL = "https://wqlowlqlvujutearzcdi.supabase.co";
 
-const SUPABASE_KEY = "TA_PUBLISHABLE_KEY_ICIsb_publishable_uDrkmlCqmXuU73vn1OLKVw_24tvyedg";
+const SUPABASE_KEY = "TA_PUBLISHABLE_KEY_ICI";
 
 
 // ==========================================
@@ -66,10 +66,8 @@ async function activerNotifications() {
         bouton.disabled = true;
 
         new Notification("🧹 RangeÇa", {
-
             body:
                 "Les notifications sont maintenant activées !"
-
         });
 
     } else if (permission === "denied") {
@@ -101,9 +99,7 @@ function determinerCategorie(texte) {
 
     const t = texte.toLowerCase();
 
-
     // Achats
-
     if (
         t.includes("acheter") ||
         t.includes("achat") ||
@@ -111,18 +107,14 @@ function determinerCategorie(texte) {
         t.includes("lait") ||
         t.includes("chaussures")
     ) {
-
         return "🛒 Achats";
     }
 
-
     // École
-
     if (
         t.includes("devoir") ||
         t.includes("contrôle") ||
         t.includes("controle") ||
-        t.includes("contrôle") ||
         t.includes("cours") ||
         t.includes("maths") ||
         t.includes("anglais") ||
@@ -130,26 +122,20 @@ function determinerCategorie(texte) {
         t.includes("école") ||
         t.includes("ecole")
     ) {
-
         return "📚 École";
     }
 
-
     // Loisirs
-
     if (
         t.includes("jouer") ||
         t.includes("gta") ||
         t.includes("jeu") ||
         t.includes("gaming")
     ) {
-
         return "🎮 Loisirs";
     }
 
-
     // Maison
-
     if (
         t.includes("ménage") ||
         t.includes("menage") ||
@@ -157,13 +143,10 @@ function determinerCategorie(texte) {
         t.includes("nettoyer") ||
         t.includes("maison")
     ) {
-
         return "🏠 Maison";
     }
 
-
     // Sport
-
     if (
         t.includes("sport") ||
         t.includes("foot") ||
@@ -172,13 +155,10 @@ function determinerCategorie(texte) {
         t.includes("entraînement") ||
         t.includes("entrainement")
     ) {
-
         return "⚽ Sport";
     }
 
-
     // Rendez-vous
-
     if (
         t.includes("rendez-vous") ||
         t.includes("rendez vous") ||
@@ -187,12 +167,8 @@ function determinerCategorie(texte) {
         t.includes("medecin") ||
         t.includes("dentiste")
     ) {
-
         return "📅 Rendez-vous";
     }
-
-
-    // Autre
 
     return "📦 Autre";
 }
@@ -208,9 +184,7 @@ function determinerDate(texte) {
 
     const maintenant = new Date();
 
-
     // Aujourd'hui
-
     if (
         t.includes("aujourd'hui") ||
         t.includes("aujourd’hui")
@@ -221,13 +195,10 @@ function determinerDate(texte) {
             .split("T")[0];
     }
 
-
     // Demain
-
     if (t.includes("demain")) {
 
-        const date =
-            new Date(maintenant);
+        const date = new Date(maintenant);
 
         date.setDate(
             date.getDate() + 1
@@ -238,16 +209,13 @@ function determinerDate(texte) {
             .split("T")[0];
     }
 
-
     // Après-demain
-
     if (
         t.includes("après-demain") ||
         t.includes("apres-demain")
     ) {
 
-        const date =
-            new Date(maintenant);
+        const date = new Date(maintenant);
 
         date.setDate(
             date.getDate() + 2
@@ -258,9 +226,7 @@ function determinerDate(texte) {
             .split("T")[0];
     }
 
-
     // Dans X jours
-
     const jours =
         t.match(/dans\s+(\d+)\s+jours?/);
 
@@ -281,9 +247,7 @@ function determinerDate(texte) {
             .split("T")[0];
     }
 
-
     // Dans X semaines
-
     const semaines =
         t.match(/dans\s+(\d+)\s+semaines?/);
 
@@ -304,9 +268,7 @@ function determinerDate(texte) {
             .split("T")[0];
     }
 
-
     // Jours de la semaine
-
     const joursSemaine = {
 
         dimanche: 0,
@@ -318,7 +280,6 @@ function determinerDate(texte) {
         samedi: 6
 
     };
-
 
     for (const jour in joursSemaine) {
 
@@ -336,17 +297,13 @@ function determinerDate(texte) {
             let difference =
                 jourVoulu - jourActuel;
 
-
             if (difference <= 0) {
-
                 difference += 7;
             }
-
 
             date.setDate(
                 date.getDate() + difference
             );
-
 
             return date
                 .toISOString()
@@ -354,10 +311,7 @@ function determinerDate(texte) {
         }
     }
 
-
-    // Dates du type :
-    // 25 septembre
-
+    // Dates du type : 25 septembre
     const mois = {
 
         janvier: 0,
@@ -378,12 +332,10 @@ function determinerDate(texte) {
 
     };
 
-
     const dateTexte =
         t.match(
             /(\d{1,2})\s+(janvier|février|fevrier|mars|avril|mai|juin|juillet|août|aout|septembre|octobre|novembre|décembre|decembre)/
         );
-
 
     if (dateTexte) {
 
@@ -396,14 +348,12 @@ function determinerDate(texte) {
         let annee =
             maintenant.getFullYear();
 
-
         let date =
             new Date(
                 annee,
                 mois[moisNom],
                 jour
             );
-
 
         if (date < maintenant) {
 
@@ -415,12 +365,10 @@ function determinerDate(texte) {
                 );
         }
 
-
         return date
             .toISOString()
             .split("T")[0];
     }
-
 
     return null;
 }
@@ -485,7 +433,6 @@ async function sauvegarderTacheSupabase(
                 }
             );
 
-
         if (!reponse.ok) {
 
             const erreur =
@@ -498,7 +445,6 @@ async function sauvegarderTacheSupabase(
 
             return false;
         }
-
 
         console.log(
             "✅ Tâche sauvegardée dans Supabase"
@@ -530,7 +476,6 @@ function ranger() {
     const texte =
         textarea.value.trim();
 
-
     if (!texte) {
 
         alert(
@@ -539,7 +484,6 @@ function ranger() {
 
         return;
     }
-
 
     const lignes =
         texte
@@ -551,16 +495,12 @@ function ranger() {
                 ligne => ligne !== ""
             );
 
-
     const resultat =
         document.getElementById("resultat");
 
-
     resultat.innerHTML = "";
 
-
     const categories = {};
-
 
     lignes.forEach(ligne => {
 
@@ -570,12 +510,9 @@ function ranger() {
         const date =
             determinerDate(ligne);
 
-
         if (!categories[categorie]) {
-
             categories[categorie] = [];
         }
-
 
         categories[categorie].push({
 
@@ -585,9 +522,7 @@ function ranger() {
 
         });
 
-
         // Sauvegarde dans Supabase
-
         sauvegarderTacheSupabase(
             ligne,
             categorie,
@@ -610,16 +545,13 @@ function ranger() {
             bloc.className =
                 "categorie";
 
-
             const titre =
                 document.createElement("h3");
 
             titre.textContent =
                 categorie;
 
-
             bloc.appendChild(titre);
-
 
             categories[categorie]
                 .forEach(tache => {
@@ -630,13 +562,11 @@ function ranger() {
                     ligne.className =
                         "tache";
 
-
                     const checkbox =
                         document.createElement("input");
 
                     checkbox.type =
                         "checkbox";
-
 
                     const texteTache =
                         document.createElement("span");
@@ -644,20 +574,16 @@ function ranger() {
                     texteTache.textContent =
                         tache.texte;
 
-
                     // Affichage de la date
-
                     if (tache.date) {
 
                         const dateAffichee =
                             document.createElement("small");
 
-
                         const date =
                             new Date(
                                 tache.date
                             );
-
 
                         dateAffichee.textContent =
                             " 📅 " +
@@ -665,15 +591,12 @@ function ranger() {
                                 "fr-FR"
                             );
 
-
                         texteTache.appendChild(
                             dateAffichee
                         );
                     }
 
-
                     // Checkbox
-
                     checkbox.addEventListener(
                         "change",
                         function () {
@@ -700,7 +623,6 @@ function ranger() {
                         }
                     );
 
-
                     ligne.appendChild(
                         checkbox
                     );
@@ -715,13 +637,11 @@ function ranger() {
 
                 });
 
-
             resultat.appendChild(
                 bloc
             );
 
         });
-
 
     textarea.value = "";
 }
