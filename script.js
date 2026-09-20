@@ -1,8 +1,9 @@
+```javascript
 // ==========================================
 // SUPABASE
 // ==========================================
 
-const SUPABASE_URL = "https://wqlowlqlvujutearzcdi.supabase.co/rest/v1/";
+const SUPABASE_URL = "https://wqlowlqlvujutearzcdi.supabase.co";
 
 const SUPABASE_KEY = "sb_publishable_uDrkmlCqmXuU73vn1OLKVw_24tvyedg";
 
@@ -19,8 +20,7 @@ async function testerSupabase() {
             `${SUPABASE_URL}/rest/v1/taches?select=*`,
             {
                 headers: {
-                    "apikey": SUPABASE_KEY,
-                    "Authorization": `Bearer ${SUPABASE_KEY}`
+                    "apikey": SUPABASE_KEY
                 }
             }
         );
@@ -31,7 +31,10 @@ async function testerSupabase() {
 
     } catch (erreur) {
 
-        console.error("Erreur Supabase :", erreur);
+        console.error(
+            "Erreur Supabase :",
+            erreur
+        );
 
     }
 }
@@ -56,7 +59,9 @@ async function activerNotifications() {
         await Notification.requestPermission();
 
     const bouton =
-        document.getElementById("boutonNotifications");
+        document.getElementById(
+            "boutonNotifications"
+        );
 
     if (permission === "granted") {
 
@@ -65,10 +70,13 @@ async function activerNotifications() {
 
         bouton.disabled = true;
 
-        new Notification("🧹 RangeÇa", {
-            body:
-                "Les notifications sont maintenant activées !"
-        });
+        new Notification(
+            "🧹 RangeÇa",
+            {
+                body:
+                    "Les notifications sont maintenant activées !"
+            }
+        );
 
     } else if (permission === "denied") {
 
@@ -85,7 +93,9 @@ async function activerNotifications() {
 function ouvrirParametres() {
 
     const menu =
-        document.getElementById("menuParametres");
+        document.getElementById(
+            "menuParametres"
+        );
 
     menu.classList.toggle("ouvert");
 }
@@ -97,9 +107,12 @@ function ouvrirParametres() {
 
 function determinerCategorie(texte) {
 
-    const t = texte.toLowerCase();
+    const t =
+        texte.toLowerCase();
+
 
     // Achats
+
     if (
         t.includes("acheter") ||
         t.includes("achat") ||
@@ -107,10 +120,13 @@ function determinerCategorie(texte) {
         t.includes("lait") ||
         t.includes("chaussures")
     ) {
+
         return "🛒 Achats";
     }
 
+
     // École
+
     if (
         t.includes("devoir") ||
         t.includes("contrôle") ||
@@ -122,20 +138,26 @@ function determinerCategorie(texte) {
         t.includes("école") ||
         t.includes("ecole")
     ) {
+
         return "📚 École";
     }
 
+
     // Loisirs
+
     if (
         t.includes("jouer") ||
         t.includes("gta") ||
         t.includes("jeu") ||
         t.includes("gaming")
     ) {
+
         return "🎮 Loisirs";
     }
 
+
     // Maison
+
     if (
         t.includes("ménage") ||
         t.includes("menage") ||
@@ -143,10 +165,13 @@ function determinerCategorie(texte) {
         t.includes("nettoyer") ||
         t.includes("maison")
     ) {
+
         return "🏠 Maison";
     }
 
+
     // Sport
+
     if (
         t.includes("sport") ||
         t.includes("foot") ||
@@ -155,10 +180,13 @@ function determinerCategorie(texte) {
         t.includes("entraînement") ||
         t.includes("entrainement")
     ) {
+
         return "⚽ Sport";
     }
 
+
     // Rendez-vous
+
     if (
         t.includes("rendez-vous") ||
         t.includes("rendez vous") ||
@@ -167,8 +195,10 @@ function determinerCategorie(texte) {
         t.includes("medecin") ||
         t.includes("dentiste")
     ) {
+
         return "📅 Rendez-vous";
     }
+
 
     return "📦 Autre";
 }
@@ -180,11 +210,15 @@ function determinerCategorie(texte) {
 
 function determinerDate(texte) {
 
-    const t = texte.toLowerCase();
+    const t =
+        texte.toLowerCase();
 
-    const maintenant = new Date();
+    const maintenant =
+        new Date();
+
 
     // Aujourd'hui
+
     if (
         t.includes("aujourd'hui") ||
         t.includes("aujourd’hui")
@@ -195,10 +229,13 @@ function determinerDate(texte) {
             .split("T")[0];
     }
 
+
     // Demain
+
     if (t.includes("demain")) {
 
-        const date = new Date(maintenant);
+        const date =
+            new Date(maintenant);
 
         date.setDate(
             date.getDate() + 1
@@ -209,13 +246,16 @@ function determinerDate(texte) {
             .split("T")[0];
     }
 
+
     // Après-demain
+
     if (
         t.includes("après-demain") ||
         t.includes("apres-demain")
     ) {
 
-        const date = new Date(maintenant);
+        const date =
+            new Date(maintenant);
 
         date.setDate(
             date.getDate() + 2
@@ -226,9 +266,13 @@ function determinerDate(texte) {
             .split("T")[0];
     }
 
+
     // Dans X jours
+
     const jours =
-        t.match(/dans\s+(\d+)\s+jours?/);
+        t.match(
+            /dans\s+(\d+)\s+jours?/
+        );
 
     if (jours) {
 
@@ -247,9 +291,13 @@ function determinerDate(texte) {
             .split("T")[0];
     }
 
+
     // Dans X semaines
+
     const semaines =
-        t.match(/dans\s+(\d+)\s+semaines?/);
+        t.match(
+            /dans\s+(\d+)\s+semaines?/
+        );
 
     if (semaines) {
 
@@ -260,7 +308,8 @@ function determinerDate(texte) {
             new Date(maintenant);
 
         date.setDate(
-            date.getDate() + nombre * 7
+            date.getDate() +
+            nombre * 7
         );
 
         return date
@@ -268,7 +317,9 @@ function determinerDate(texte) {
             .split("T")[0];
     }
 
+
     // Jours de la semaine
+
     const joursSemaine = {
 
         dimanche: 0,
@@ -281,7 +332,10 @@ function determinerDate(texte) {
 
     };
 
-    for (const jour in joursSemaine) {
+
+    for (
+        const jour in joursSemaine
+    ) {
 
         if (t.includes(jour)) {
 
@@ -295,14 +349,17 @@ function determinerDate(texte) {
                 joursSemaine[jour];
 
             let difference =
-                jourVoulu - jourActuel;
+                jourVoulu -
+                jourActuel;
 
             if (difference <= 0) {
+
                 difference += 7;
             }
 
             date.setDate(
-                date.getDate() + difference
+                date.getDate() +
+                difference
             );
 
             return date
@@ -311,7 +368,9 @@ function determinerDate(texte) {
         }
     }
 
-    // Dates du type : 25 septembre
+
+    // Dates comme : 25 septembre
+
     const mois = {
 
         janvier: 0,
@@ -332,15 +391,19 @@ function determinerDate(texte) {
 
     };
 
+
     const dateTexte =
         t.match(
             /(\d{1,2})\s+(janvier|février|fevrier|mars|avril|mai|juin|juillet|août|aout|septembre|octobre|novembre|décembre|decembre)/
         );
 
+
     if (dateTexte) {
 
         const jour =
-            parseInt(dateTexte[1]);
+            parseInt(
+                dateTexte[1]
+            );
 
         const moisNom =
             dateTexte[2];
@@ -355,6 +418,7 @@ function determinerDate(texte) {
                 jour
             );
 
+
         if (date < maintenant) {
 
             date =
@@ -365,10 +429,12 @@ function determinerDate(texte) {
                 );
         }
 
+
         return date
             .toISOString()
             .split("T")[0];
     }
+
 
     return null;
 }
@@ -397,9 +463,6 @@ async function sauvegarderTacheSupabase(
 
                         "apikey":
                             SUPABASE_KEY,
-
-                        "Authorization":
-                            `Bearer ${SUPABASE_KEY}`,
 
                         "Content-Type":
                             "application/json",
@@ -433,6 +496,7 @@ async function sauvegarderTacheSupabase(
                 }
             );
 
+
         if (!reponse.ok) {
 
             const erreur =
@@ -445,6 +509,7 @@ async function sauvegarderTacheSupabase(
 
             return false;
         }
+
 
         console.log(
             "✅ Tâche sauvegardée dans Supabase"
@@ -471,10 +536,13 @@ async function sauvegarderTacheSupabase(
 function ranger() {
 
     const textarea =
-        document.getElementById("texte");
+        document.getElementById(
+            "texte"
+        );
 
     const texte =
         textarea.value.trim();
+
 
     if (!texte) {
 
@@ -485,44 +553,62 @@ function ranger() {
         return;
     }
 
+
     const lignes =
         texte
             .split("\n")
             .map(
-                ligne => ligne.trim()
+                ligne =>
+                    ligne.trim()
             )
             .filter(
-                ligne => ligne !== ""
+                ligne =>
+                    ligne !== ""
             );
 
+
     const resultat =
-        document.getElementById("resultat");
+        document.getElementById(
+            "resultat"
+        );
+
 
     resultat.innerHTML = "";
 
+
     const categories = {};
+
 
     lignes.forEach(ligne => {
 
         const categorie =
-            determinerCategorie(ligne);
+            determinerCategorie(
+                ligne
+            );
 
         const date =
-            determinerDate(ligne);
+            determinerDate(
+                ligne
+            );
+
 
         if (!categories[categorie]) {
+
             categories[categorie] = [];
         }
 
+
         categories[categorie].push({
 
-            texte: ligne,
+            texte:
+                ligne,
 
-            date: date
+            date:
+                date
 
         });
 
-        // Sauvegarde dans Supabase
+
         sauvegarderTacheSupabase(
             ligne,
             categorie,
@@ -533,52 +619,71 @@ function ranger() {
 
 
     // ==========================================
-    // AFFICHAGE DES CATÉGORIES
+    // AFFICHAGE
     // ==========================================
 
     Object.keys(categories)
         .forEach(categorie => {
 
             const bloc =
-                document.createElement("div");
+                document.createElement(
+                    "div"
+                );
 
             bloc.className =
                 "categorie";
 
+
             const titre =
-                document.createElement("h3");
+                document.createElement(
+                    "h3"
+                );
 
             titre.textContent =
                 categorie;
 
-            bloc.appendChild(titre);
+
+            bloc.appendChild(
+                titre
+            );
+
 
             categories[categorie]
                 .forEach(tache => {
 
                     const ligne =
-                        document.createElement("div");
+                        document.createElement(
+                            "div"
+                        );
 
                     ligne.className =
                         "tache";
 
+
                     const checkbox =
-                        document.createElement("input");
+                        document.createElement(
+                            "input"
+                        );
 
                     checkbox.type =
                         "checkbox";
 
+
                     const texteTache =
-                        document.createElement("span");
+                        document.createElement(
+                            "span"
+                        );
 
                     texteTache.textContent =
                         tache.texte;
 
-                    // Affichage de la date
+
                     if (tache.date) {
 
                         const dateAffichee =
-                            document.createElement("small");
+                            document.createElement(
+                                "small"
+                            );
 
                         const date =
                             new Date(
@@ -596,7 +701,7 @@ function ranger() {
                         );
                     }
 
-                    // Checkbox
+
                     checkbox.addEventListener(
                         "change",
                         function () {
@@ -623,6 +728,7 @@ function ranger() {
                         }
                     );
 
+
                     ligne.appendChild(
                         checkbox
                     );
@@ -637,11 +743,13 @@ function ranger() {
 
                 });
 
+
             resultat.appendChild(
                 bloc
             );
 
         });
+
 
     textarea.value = "";
 }
@@ -652,3 +760,4 @@ function ranger() {
 // ==========================================
 
 testerSupabase();
+```
