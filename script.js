@@ -1,21 +1,18 @@
-```javascript
+console.log("RANGECA NOUVEAU SCRIPT");
+
 // ==========================================
 // SUPABASE
 // ==========================================
 
 const SUPABASE_URL = "https://wqlowlqlvujutearzcdi.supabase.co";
-
 const SUPABASE_KEY = "sb_publishable_uDrkmlCqmXuU73vn1OLKVw_24tvyedg";
-
 
 // ==========================================
 // TEST SUPABASE
 // ==========================================
 
 async function testerSupabase() {
-
     try {
-
         const reponse = await fetch(
             `${SUPABASE_URL}/rest/v1/taches?select=*`,
             {
@@ -25,167 +22,188 @@ async function testerSupabase() {
             }
         );
 
-        const donnees = await reponse.json();
+        const texte = await reponse.text();
 
-        console.log("Supabase :", donnees);
+        console.log("STATUT SUPABASE :", reponse.status);
+        console.log("REPONSE SUPABASE :", texte);
 
     } catch (erreur) {
-
-        console.error(
-            "Erreur Supabase :",
-            erreur
-        );
-
+        console.error("Erreur Supabase :", erreur);
     }
 }
 
+// ==========================================
+// SAUVEGARDER UNE TÂCHE DANS SUPABASE
+// ==========================================
+
+async function sauvegarderTacheSupabase(texte, categorie, date) {
+    try {
+        const reponse = await fetch(
+            `${SUPABASE_URL}/rest/v1/taches`,
+            {
+                method: "POST",
+                headers: {
+                    "apikey": SUPABASE_KEY,
+                    "Content-Type": "application/json",
+                    "Prefer": "return=minimal"
+                },
+                body: JSON.stringify({
+                    texte: texte,
+                    categorie: categorie,
+                    date_tache: date || null,
+                    heure_notification: date ? "18:00:00" : null,
+                    notification_envoyee: false
+                })
+            }
+        );
+
+        if (!reponse.ok) {
+            const erreur = await reponse.text();
+            console.error("Erreur sauvegarde Supabase :", erreur);
+            return false;
+        }
+
+        console.log("✅ Tâche sauvegardée dans Supabase");
+        return true;
+
+    } catch (erreur) {
+        console.error("Erreur de connexion à Supabase :", erreur);
+        return false;
+    }
+}
 
 // ==========================================
 // NOTIFICATIONS
 // ==========================================
 
 async function activerNotifications() {
-
     if (!("Notification" in window)) {
-
-        alert(
-            "❌ Les notifications ne sont pas disponibles sur cet appareil."
-        );
-
+        alert("Les notifications ne sont pas prises en charge sur cet appareil.");
         return;
     }
 
-    const permission =
-        await Notification.requestPermission();
+    const permission = await Notification.requestPermission();
 
-    const bouton =
-        document.getElementById(
-            "boutonNotifications"
-        );
+    const bouton = document.getElementById("boutonNotifications");
 
     if (permission === "granted") {
-
-        bouton.textContent =
-            "✅ Notifications activées";
-
-        bouton.disabled = true;
-
-        new Notification(
-            "🧹 RangeÇa",
-            {
-                body:
-                    "Les notifications sont maintenant activées !"
-            }
-        );
-
-    } else if (permission === "denied") {
-
-        bouton.textContent =
-            "❌ Notifications refusées";
+        bouton.textContent = "Activées";
+        alert("🔔 Notifications activées !");
+    } else {
+        bouton.textContent = "Bloquées";
+        alert("Les notifications sont bloquées dans ton navigateur.");
     }
 }
-
 
 // ==========================================
 // PARAMÈTRES
 // ==========================================
 
 function ouvrirParametres() {
+    const menu = document.getElementById("menuParametres");
 
-    const menu =
-        document.getElementById(
-            "menuParametres"
-        );
+    if (!menu) {
+        return;
+    }
 
-    menu.classList.toggle("ouvert");
+    if (menu.style.display === "block") {
+        menu.style.display = "none";
+    } else {
+        menu.style.display = "block";
+    }
 }
 
-
 // ==========================================
-// CLASSIFICATION
+// CATÉGORIES
 // ==========================================
 
 function determinerCategorie(texte) {
-
-    const t =
-        texte.toLowerCase();
-
-
-    // Achats
+    const t = texte.toLowerCase();
 
     if (
         t.includes("acheter") ||
         t.includes("achat") ||
         t.includes("courses") ||
         t.includes("lait") ||
-        t.includes("chaussures")
+        t.includes("chaussures") ||
+        t.includes("magasin")
     ) {
-
-        return "🛒 Achats";
+        return {
+            nom: "Achats",
+            emoji: "🛒"
+        };
     }
-
-
-    // École
 
     if (
         t.includes("devoir") ||
         t.includes("contrôle") ||
         t.includes("controle") ||
         t.includes("cours") ||
+        t.includes("réviser") ||
+        t.includes("reviser") ||
         t.includes("maths") ||
         t.includes("anglais") ||
+        t.includes("français") ||
+        t.includes("francais") ||
+        t.includes("physique") ||
         t.includes("svt") ||
-        t.includes("école") ||
-        t.includes("ecole")
+        t.includes("ses") ||
+        t.includes("nsi") ||
+        t.includes("dm")
     ) {
-
-        return "📚 École";
+        return {
+            nom: "École",
+            emoji: "📚"
+        };
     }
-
-
-    // Loisirs
 
     if (
-        t.includes("jouer") ||
         t.includes("gta") ||
+        t.includes("valorant") ||
+        t.includes("jouer") ||
         t.includes("jeu") ||
-        t.includes("gaming")
+        t.includes("playstation") ||
+        t.includes("ps5") ||
+        t.includes("film") ||
+        t.includes("série") ||
+        t.includes("serie")
     ) {
-
-        return "🎮 Loisirs";
+        return {
+            nom: "Loisirs",
+            emoji: "🎮"
+        };
     }
-
-
-    // Maison
 
     if (
         t.includes("ménage") ||
         t.includes("menage") ||
         t.includes("ranger") ||
         t.includes("nettoyer") ||
-        t.includes("maison")
+        t.includes("maison") ||
+        t.includes("linge") ||
+        t.includes("vaisselle")
     ) {
-
-        return "🏠 Maison";
+        return {
+            nom: "Maison",
+            emoji: "🏠"
+        };
     }
-
-
-    // Sport
 
     if (
         t.includes("sport") ||
         t.includes("foot") ||
         t.includes("football") ||
         t.includes("muscu") ||
-        t.includes("entraînement") ||
-        t.includes("entrainement")
+        t.includes("courir") ||
+        t.includes("vélo") ||
+        t.includes("velo") ||
+        t.includes("gym")
     ) {
-
-        return "⚽ Sport";
+        return {
+            nom: "Sport",
+            emoji: "⚽"
+        };
     }
-
-
-    // Rendez-vous
 
     if (
         t.includes("rendez-vous") ||
@@ -193,135 +211,56 @@ function determinerCategorie(texte) {
         t.includes("rdv") ||
         t.includes("médecin") ||
         t.includes("medecin") ||
-        t.includes("dentiste")
+        t.includes("dentiste") ||
+        t.includes("coiffeur")
     ) {
-
-        return "📅 Rendez-vous";
+        return {
+            nom: "Rendez-vous",
+            emoji: "📅"
+        };
     }
 
-
-    return "📦 Autre";
+    return {
+        nom: "Autre",
+        emoji: "📦"
+    };
 }
 
+// ==========================================
+// DATES
+// ==========================================
 
-// ==========================================
-// DÉTECTION DE DATE
-// ==========================================
+function ajouterJours(date, nombre) {
+    const resultat = new Date(date);
+    resultat.setDate(resultat.getDate() + nombre);
+    return resultat;
+}
+
+function formaterDate(date) {
+    const annee = date.getFullYear();
+    const mois = String(date.getMonth() + 1).padStart(2, "0");
+    const jour = String(date.getDate()).padStart(2, "0");
+
+    return `${annee}-${mois}-${jour}`;
+}
 
 function determinerDate(texte) {
+    const t = texte.toLowerCase();
+    const aujourdHui = new Date();
 
-    const t =
-        texte.toLowerCase();
-
-    const maintenant =
-        new Date();
-
-
-    // Aujourd'hui
-
-    if (
-        t.includes("aujourd'hui") ||
-        t.includes("aujourd’hui")
-    ) {
-
-        return maintenant
-            .toISOString()
-            .split("T")[0];
+    if (t.includes("après-demain") || t.includes("apres-demain")) {
+        return formaterDate(ajouterJours(aujourdHui, 2));
     }
-
-
-    // Demain
 
     if (t.includes("demain")) {
-
-        const date =
-            new Date(maintenant);
-
-        date.setDate(
-            date.getDate() + 1
-        );
-
-        return date
-            .toISOString()
-            .split("T")[0];
+        return formaterDate(ajouterJours(aujourdHui, 1));
     }
 
-
-    // Après-demain
-
-    if (
-        t.includes("après-demain") ||
-        t.includes("apres-demain")
-    ) {
-
-        const date =
-            new Date(maintenant);
-
-        date.setDate(
-            date.getDate() + 2
-        );
-
-        return date
-            .toISOString()
-            .split("T")[0];
+    if (t.includes("aujourd'hui") || t.includes("aujourd’hui")) {
+        return formaterDate(aujourdHui);
     }
 
-
-    // Dans X jours
-
-    const jours =
-        t.match(
-            /dans\s+(\d+)\s+jours?/
-        );
-
-    if (jours) {
-
-        const nombre =
-            parseInt(jours[1]);
-
-        const date =
-            new Date(maintenant);
-
-        date.setDate(
-            date.getDate() + nombre
-        );
-
-        return date
-            .toISOString()
-            .split("T")[0];
-    }
-
-
-    // Dans X semaines
-
-    const semaines =
-        t.match(
-            /dans\s+(\d+)\s+semaines?/
-        );
-
-    if (semaines) {
-
-        const nombre =
-            parseInt(semaines[1]);
-
-        const date =
-            new Date(maintenant);
-
-        date.setDate(
-            date.getDate() +
-            nombre * 7
-        );
-
-        return date
-            .toISOString()
-            .split("T")[0];
-    }
-
-
-    // Jours de la semaine
-
-    const joursSemaine = {
-
+    const jours = {
         dimanche: 0,
         lundi: 1,
         mardi: 2,
@@ -329,50 +268,43 @@ function determinerDate(texte) {
         jeudi: 4,
         vendredi: 5,
         samedi: 6
-
     };
 
-
-    for (
-        const jour in joursSemaine
-    ) {
-
-        if (t.includes(jour)) {
-
-            const date =
-                new Date(maintenant);
-
-            const jourActuel =
-                date.getDay();
-
-            const jourVoulu =
-                joursSemaine[jour];
-
-            let difference =
-                jourVoulu -
-                jourActuel;
+    for (const jourNom in jours) {
+        if (t.includes(jourNom)) {
+            const date = new Date(aujourdHui);
+            const jourActuel = date.getDay();
+            let difference = jours[jourNom] - jourActuel;
 
             if (difference <= 0) {
-
                 difference += 7;
             }
 
-            date.setDate(
-                date.getDate() +
-                difference
-            );
-
-            return date
-                .toISOString()
-                .split("T")[0];
+            return formaterDate(ajouterJours(aujourdHui, difference));
         }
     }
 
+    const correspondanceJours = t.match(/dans\s+(\d+)\s+jours?/);
 
-    // Dates comme : 25 septembre
+    if (correspondanceJours) {
+        const nombre = parseInt(correspondanceJours[1], 10);
+
+        return formaterDate(
+            ajouterJours(aujourdHui, nombre)
+        );
+    }
+
+    const correspondanceSemaines = t.match(/dans\s+(\d+)\s+semaines?/);
+
+    if (correspondanceSemaines) {
+        const nombre = parseInt(correspondanceSemaines[1], 10);
+
+        return formaterDate(
+            ajouterJours(aujourdHui, nombre * 7)
+        );
+    }
 
     const mois = {
-
         janvier: 0,
         février: 1,
         fevrier: 1,
@@ -388,376 +320,311 @@ function determinerDate(texte) {
         novembre: 10,
         décembre: 11,
         decembre: 11
-
     };
 
+    const correspondanceDate = t.match(
+        /(\d{1,2})\s+(janvier|février|fevrier|mars|avril|mai|juin|juillet|août|aout|septembre|octobre|novembre|décembre|decembre)/
+    );
 
-    const dateTexte =
-        t.match(
-            /(\d{1,2})\s+(janvier|février|fevrier|mars|avril|mai|juin|juillet|août|aout|septembre|octobre|novembre|décembre|decembre)/
-        );
+    if (correspondanceDate) {
+        const jour = parseInt(correspondanceDate[1], 10);
+        const moisNom = correspondanceDate[2];
 
+        let annee = aujourdHui.getFullYear();
+        const date = new Date(annee, mois[moisNom], jour);
 
-    if (dateTexte) {
-
-        const jour =
-            parseInt(
-                dateTexte[1]
-            );
-
-        const moisNom =
-            dateTexte[2];
-
-        let annee =
-            maintenant.getFullYear();
-
-        let date =
-            new Date(
-                annee,
-                mois[moisNom],
-                jour
-            );
-
-
-        if (date < maintenant) {
-
-            date =
-                new Date(
-                    annee + 1,
-                    mois[moisNom],
-                    jour
-                );
+        if (date < aujourdHui) {
+            annee++;
         }
 
+        const vraieDate = new Date(
+            annee,
+            mois[moisNom],
+            jour
+        );
 
-        return date
-            .toISOString()
-            .split("T")[0];
+        return formaterDate(vraieDate);
     }
-
 
     return null;
 }
 
-
 // ==========================================
-// SAUVEGARDER UNE TÂCHE DANS SUPABASE
+// SUPPRIMER UNE TÂCHE
 // ==========================================
 
-async function sauvegarderTacheSupabase(
-    texte,
-    categorie,
-    date
-) {
+function supprimerTache(index) {
+    const taches = JSON.parse(
+        localStorage.getItem("rangeca_taches") || "[]"
+    );
 
-    try {
+    taches.splice(index, 1);
 
-        const reponse =
-            await fetch(
-                `${SUPABASE_URL}/rest/v1/taches`,
-                {
+    localStorage.setItem(
+        "rangeca_taches",
+        JSON.stringify(taches)
+    );
 
-                    method: "POST",
-
-                    headers: {
-
-                        "apikey":
-                            SUPABASE_KEY,
-
-                        "Content-Type":
-                            "application/json",
-
-                        "Prefer":
-                            "return=minimal"
-
-                    },
-
-                    body:
-                        JSON.stringify({
-
-                            texte:
-                                texte,
-
-                            categorie:
-                                categorie,
-
-                            date_tache:
-                                date,
-
-                            heure_notification:
-                                date
-                                    ? "18:00:00"
-                                    : null,
-
-                            notification_envoyee:
-                                false
-
-                        })
-                }
-            );
-
-
-        if (!reponse.ok) {
-
-            const erreur =
-                await reponse.text();
-
-            console.error(
-                "Erreur Supabase :",
-                erreur
-            );
-
-            return false;
-        }
-
-
-        console.log(
-            "✅ Tâche sauvegardée dans Supabase"
-        );
-
-        return true;
-
-    } catch (erreur) {
-
-        console.error(
-            "Erreur de connexion à Supabase :",
-            erreur
-        );
-
-        return false;
-    }
+    afficherTaches();
 }
 
+// ==========================================
+// MODIFIER UNE TÂCHE
+// ==========================================
+
+function modifierTache(index) {
+    const taches = JSON.parse(
+        localStorage.getItem("rangeca_taches") || "[]"
+    );
+
+    const nouvelleValeur = prompt(
+        "Modifier la tâche :",
+        taches[index].texte
+    );
+
+    if (nouvelleValeur === null) {
+        return;
+    }
+
+    if (nouvelleValeur.trim() === "") {
+        return;
+    }
+
+    taches[index].texte = nouvelleValeur.trim();
+    taches[index].categorie = determinerCategorie(
+        nouvelleValeur
+    );
+    taches[index].date = determinerDate(
+        nouvelleValeur
+    );
+
+    localStorage.setItem(
+        "rangeca_taches",
+        JSON.stringify(taches)
+    );
+
+    afficherTaches();
+}
+
+// ==========================================
+// COCHER / DÉCOCHER
+// ==========================================
+
+function changerEtatTache(index) {
+    const taches = JSON.parse(
+        localStorage.getItem("rangeca_taches") || "[]"
+    );
+
+    taches[index].terminee = !taches[index].terminee;
+
+    localStorage.setItem(
+        "rangeca_taches",
+        JSON.stringify(taches)
+    );
+
+    afficherTaches();
+}
+
+// ==========================================
+// AFFICHER LES TÂCHES
+// ==========================================
+
+function afficherTaches() {
+    const resultat = document.getElementById("resultat");
+
+    if (!resultat) {
+        return;
+    }
+
+    const taches = JSON.parse(
+        localStorage.getItem("rangeca_taches") || "[]"
+    );
+
+    if (taches.length === 0) {
+        resultat.innerHTML = `
+            <p class="empty">
+                Ton classement apparaîtra ici...
+            </p>
+        `;
+
+        return;
+    }
+
+    const categories = {};
+
+    taches.forEach((tache, index) => {
+        if (!categories[tache.categorie.nom]) {
+            categories[tache.categorie.nom] = {
+                emoji: tache.categorie.emoji,
+                taches: []
+            };
+        }
+
+        categories[tache.categorie.nom].taches.push({
+            ...tache,
+            index: index
+        });
+    });
+
+    let html = "";
+
+    for (const nomCategorie in categories) {
+        const categorie = categories[nomCategorie];
+
+        html += `
+            <div class="categorie">
+                <h3>
+                    ${categorie.emoji} ${nomCategorie}
+                </h3>
+        `;
+
+        categorie.taches.forEach(tache => {
+            const classeTerminee = tache.terminee
+                ? "tache-terminee"
+                : "";
+
+            let dateHTML = "";
+
+            if (tache.date) {
+                const date = new Date(
+                    tache.date + "T00:00:00"
+                );
+
+                dateHTML = `
+                    <span class="date-tache">
+                        📅 ${date.toLocaleDateString("fr-FR", {
+                            day: "numeric",
+                            month: "long"
+                        })}
+                    </span>
+                `;
+            }
+
+            html += `
+                <div class="tache ${classeTerminee}">
+                    <input
+                        type="checkbox"
+                        ${tache.terminee ? "checked" : ""}
+                        onchange="changerEtatTache(${tache.index})"
+                    >
+
+                    <div class="contenu-tache">
+                        <span class="texte-tache">
+                            ${tache.texte}
+                        </span>
+
+                        ${dateHTML}
+                    </div>
+
+                    <button
+                        onclick="modifierTache(${tache.index})"
+                        title="Modifier"
+                    >
+                        ✏️
+                    </button>
+
+                    <button
+                        onclick="supprimerTache(${tache.index})"
+                        title="Supprimer"
+                    >
+                        🗑️
+                    </button>
+                </div>
+            `;
+        });
+
+        html += `
+            </div>
+        `;
+    }
+
+    resultat.innerHTML = html;
+}
 
 // ==========================================
 // RANGER LES INFORMATIONS
 // ==========================================
 
-function ranger() {
+async function ranger() {
+    const textarea = document.getElementById("texte");
 
-    const textarea =
-        document.getElementById(
-            "texte"
-        );
-
-    const texte =
-        textarea.value.trim();
-
-
-    if (!texte) {
-
-        alert(
-            "Écris quelque chose à ranger !"
-        );
-
+    if (!textarea) {
         return;
     }
 
+    const texte = textarea.value.trim();
 
-    const lignes =
-        texte
-            .split("\n")
-            .map(
-                ligne =>
-                    ligne.trim()
-            )
-            .filter(
-                ligne =>
-                    ligne !== ""
-            );
+    if (!texte) {
+        alert("Écris au moins une chose à ranger 🙂");
+        return;
+    }
 
+    const lignes = texte
+        .split("\n")
+        .map(ligne => ligne.trim())
+        .filter(ligne => ligne !== "");
 
-    const resultat =
-        document.getElementById(
-            "resultat"
-        );
+    const anciennesTaches = JSON.parse(
+        localStorage.getItem("rangeca_taches") || "[]"
+    );
 
+    for (const ligne of lignes) {
+        const categorie = determinerCategorie(ligne);
+        const date = determinerDate(ligne);
 
-    resultat.innerHTML = "";
+        const nouvelleTache = {
+            texte: ligne,
+            categorie: categorie,
+            date: date,
+            terminee: false
+        };
 
+        anciennesTaches.push(nouvelleTache);
 
-    const categories = {};
-
-
-    lignes.forEach(ligne => {
-
-        const categorie =
-            determinerCategorie(
-                ligne
-            );
-
-        const date =
-            determinerDate(
-                ligne
-            );
-
-
-        if (!categories[categorie]) {
-
-            categories[categorie] = [];
-        }
-
-
-        categories[categorie].push({
-
-            texte:
-                ligne,
-
-            date:
-                date
-
-        });
-
-
-        sauvegarderTacheSupabase(
+        await sauvegarderTacheSupabase(
             ligne,
-            categorie,
+            categorie.nom,
             date
         );
+    }
 
-    });
-
-
-    // ==========================================
-    // AFFICHAGE
-    // ==========================================
-
-    Object.keys(categories)
-        .forEach(categorie => {
-
-            const bloc =
-                document.createElement(
-                    "div"
-                );
-
-            bloc.className =
-                "categorie";
-
-
-            const titre =
-                document.createElement(
-                    "h3"
-                );
-
-            titre.textContent =
-                categorie;
-
-
-            bloc.appendChild(
-                titre
-            );
-
-
-            categories[categorie]
-                .forEach(tache => {
-
-                    const ligne =
-                        document.createElement(
-                            "div"
-                        );
-
-                    ligne.className =
-                        "tache";
-
-
-                    const checkbox =
-                        document.createElement(
-                            "input"
-                        );
-
-                    checkbox.type =
-                        "checkbox";
-
-
-                    const texteTache =
-                        document.createElement(
-                            "span"
-                        );
-
-                    texteTache.textContent =
-                        tache.texte;
-
-
-                    if (tache.date) {
-
-                        const dateAffichee =
-                            document.createElement(
-                                "small"
-                            );
-
-                        const date =
-                            new Date(
-                                tache.date
-                            );
-
-                        dateAffichee.textContent =
-                            " 📅 " +
-                            date.toLocaleDateString(
-                                "fr-FR"
-                            );
-
-                        texteTache.appendChild(
-                            dateAffichee
-                        );
-                    }
-
-
-                    checkbox.addEventListener(
-                        "change",
-                        function () {
-
-                            if (
-                                checkbox.checked
-                            ) {
-
-                                texteTache.style.textDecoration =
-                                    "line-through";
-
-                                texteTache.style.opacity =
-                                    "0.5";
-
-                            } else {
-
-                                texteTache.style.textDecoration =
-                                    "none";
-
-                                texteTache.style.opacity =
-                                    "1";
-                            }
-
-                        }
-                    );
-
-
-                    ligne.appendChild(
-                        checkbox
-                    );
-
-                    ligne.appendChild(
-                        texteTache
-                    );
-
-                    bloc.appendChild(
-                        ligne
-                    );
-
-                });
-
-
-            resultat.appendChild(
-                bloc
-            );
-
-        });
-
+    localStorage.setItem(
+        "rangeca_taches",
+        JSON.stringify(anciennesTaches)
+    );
 
     textarea.value = "";
+
+    afficherTaches();
 }
 
+// ==========================================
+// CHARGEMENT
+// ==========================================
+
+window.addEventListener("load", () => {
+    afficherTaches();
+
+    // Test Supabase au chargement
+    testerSupabase();
+});
 
 // ==========================================
-// TEST AU DÉMARRAGE
+// SERVICE WORKER
 // ==========================================
 
-testerSupabase();
-```
+if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+        navigator.serviceWorker
+            .register("./service-worker.js")
+            .then(() => {
+                console.log("✅ Service Worker enregistré");
+            })
+            .catch(erreur => {
+                console.error(
+                    "Erreur Service Worker :",
+                    erreur
+                );
+            });
+    });
+}
