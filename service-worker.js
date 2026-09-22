@@ -1,5 +1,5 @@
 ```javascript
-const CACHE_NAME = "rangeca-v3";
+const CACHE_NAME = "rangeca-v4";
 
 const fichiers = [
     "./",
@@ -10,6 +10,7 @@ const fichiers = [
     "./logorc.png"
 ];
 
+
 // ==========================================
 // INSTALLATION
 // ==========================================
@@ -17,12 +18,14 @@ const fichiers = [
 self.addEventListener("install", event => {
 
     event.waitUntil(
+
         caches.open(CACHE_NAME)
             .then(cache => cache.addAll(fichiers))
+
     );
 
-    // Active immédiatement la nouvelle version
     self.skipWaiting();
+
 });
 
 
@@ -39,7 +42,9 @@ self.addEventListener("activate", event => {
             return Promise.all(
 
                 nomsCaches
+
                     .filter(nom => nom !== CACHE_NAME)
+
                     .map(nom => caches.delete(nom))
 
             );
@@ -48,13 +53,13 @@ self.addEventListener("activate", event => {
 
     );
 
-    // Prend immédiatement le contrôle des pages
     self.clients.claim();
+
 });
 
 
 // ==========================================
-// CACHE / REQUÊTES
+// REQUÊTES
 // ==========================================
 
 self.addEventListener("fetch", event => {
@@ -87,19 +92,19 @@ self.addEventListener("notificationclick", event => {
             type: "window",
             includeUncontrolled: true
         })
+
         .then(listeClients => {
 
-            // Si RangeÇa est déjà ouvert,
-            // on remet la fenêtre au premier plan
             for (const client of listeClients) {
 
                 if ("focus" in client) {
+
                     return client.focus();
+
                 }
 
             }
 
-            // Sinon on ouvre RangeÇa
             if (clients.openWindow) {
 
                 return clients.openWindow("./");
