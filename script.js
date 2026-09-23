@@ -1,14 +1,18 @@
-console.log("RANGECA NOTIFICATIONS V1");
+```javascript
+console.log("RANGECA NOTIFICATIONS V2");
+
 
 // ==========================================
 // SUPABASE
 // ==========================================
 
 const SUPABASE_URL = "https://wqlowlqlvujutearzcdi.supabase.co";
+
 const SUPABASE_KEY = "sb_publishable_uDrkmlCqmXuU73vn1OLKVw_24tvyedg";
 
+
 // ==========================================
-// VARIABLES NOTIFICATIONS
+// NOTIFICATIONS
 // ==========================================
 
 const NOTIFICATION_HEURE_PAR_DEFAUT = "18:00";
@@ -27,21 +31,26 @@ async function testerSupabase() {
         const reponse = await fetch(
             `${SUPABASE_URL}/rest/v1/taches?select=*`,
             {
+                method: "GET",
+
                 headers: {
                     "apikey": SUPABASE_KEY
                 }
             }
         );
 
-        const texte = await reponse.text();
+        if (!reponse.ok) {
+            throw new Error(`Erreur HTTP ${reponse.status}`);
+        }
 
-        console.log("STATUT SUPABASE :", reponse.status);
-        console.log("REPONSE SUPABASE :", texte);
+        const donnees = await reponse.json();
+
+        console.log("✅ Supabase fonctionne :", donnees);
 
     } catch (erreur) {
 
         console.error(
-            "Erreur Supabase :",
+            "❌ Erreur Supabase :",
             erreur
         );
 
@@ -51,7 +60,7 @@ async function testerSupabase() {
 
 
 // ==========================================
-// SAUVEGARDER UNE TÂCHE DANS SUPABASE
+// SAUVEGARDE SUPABASE
 // ==========================================
 
 async function sauvegarderTacheSupabase(
@@ -69,8 +78,9 @@ async function sauvegarderTacheSupabase(
                 method: "POST",
 
                 headers: {
-                    "apikey": SUPABASE_KEY,
                     "Content-Type": "application/json",
+                    "apikey": SUPABASE_KEY,
+                    "Authorization": `Bearer ${SUPABASE_KEY}`,
                     "Prefer": "return=minimal"
                 },
 
@@ -82,46 +92,41 @@ async function sauvegarderTacheSupabase(
 
                     date_tache: date || null,
 
-                    heure_notification: date
-                        ? heure + ":00"
-                        : null,
+                    heure_notification:
+                        date
+                            ? `${heure}:00`
+                            : null,
 
                     notification_envoyee: false
 
                 })
-
             }
         );
 
 
         if (!reponse.ok) {
 
-            const erreur = await reponse.text();
+            const erreurTexte = await reponse.text();
 
-            console.error(
-                "Erreur sauvegarde Supabase :",
-                erreur
+            throw new Error(
+                `HTTP ${reponse.status} : ${erreurTexte}`
             );
-
-            return false;
 
         }
 
 
         console.log(
-            "✅ Tâche sauvegardée dans Supabase"
+            "✅ Tâche sauvegardée dans Supabase :",
+            texte
         );
 
-        return true;
 
     } catch (erreur) {
 
         console.error(
-            "Erreur de connexion à Supabase :",
+            "❌ Impossible de sauvegarder dans Supabase :",
             erreur
         );
-
-        return false;
 
     }
 
@@ -129,7 +134,7 @@ async function sauvegarderTacheSupabase(
 
 
 // ==========================================
-// NOTIFICATIONS
+// NOTIFICATIONS — ACTIVATION
 // ==========================================
 
 async function activerNotifications() {
@@ -137,11 +142,10 @@ async function activerNotifications() {
     if (!("Notification" in window)) {
 
         alert(
-            "Les notifications ne sont pas prises en charge sur cet appareil."
+            "❌ Ton navigateur ne prend pas en charge les notifications."
         );
 
         return;
-
     }
 
 
@@ -150,10 +154,9 @@ async function activerNotifications() {
         const permission =
             await Notification.requestPermission();
 
+
         const bouton =
-            document.getElementById(
-                "boutonNotifications"
-            );
+            document.getElementById("boutonNotifications");
 
 
         if (permission === "granted") {
@@ -165,16 +168,18 @@ async function activerNotifications() {
                 "activees"
             );
 
+
             alert(
                 "🔔 Notifications activées !"
             );
+
 
             await enregistrerServiceWorker();
 
             programmerToutesLesNotifications();
 
 
-        } else {
+        } else if (permission === "denied") {
 
             bouton.textContent = "Bloquées";
 
@@ -183,21 +188,24 @@ async function activerNotifications() {
                 "bloquees"
             );
 
+
             alert(
-                "Les notifications sont bloquées dans ton navigateur."
+                "⚠️ Les notifications sont bloquées dans ton navigateur."
             );
+
+
+        } else {
+
+            bouton.textContent = "Activer";
 
         }
 
+
     } catch (erreur) {
 
         console.error(
-            "Erreur notifications :",
+            "❌ Erreur notifications :",
             erreur
-        );
-
-        alert(
-            "Impossible d'activer les notifications."
         );
 
     }
@@ -206,66 +214,16 @@ async function activerNotifications() {
 
 
 // ==========================================
-// ENREGISTRER LE SERVICE WORKER
-// ==========================================
-
-async function enregistrerServiceWorker() {
-
-    if (!("serviceWorker" in navigator)) {
-
-        console.warn(
-            "Service Worker non disponible."
-        );
-
-        return null;
-
-    }
-
-
-    try {
-
-        const registration =
-            await navigator.serviceWorker.register(
-                "./service-worker.js?v=2"
-            );
-
-        console.log(
-            "✅ Service Worker enregistré"
-        );
-
-        await navigator.serviceWorker.ready;
-
-        return registration;
-
-    } catch (erreur) {
-
-        console.error(
-            "Erreur Service Worker :",
-            erreur
-        );
-
-        return null;
-
-    }
-
-}
-
-
-// ==========================================
-// VÉRIFIER L'ÉTAT DES NOTIFICATIONS
+// BOUTON NOTIFICATIONS
 // ==========================================
 
 function mettreAJourBoutonNotifications() {
 
     const bouton =
-        document.getElementById(
-            "boutonNotifications"
-        );
+        document.getElementById("boutonNotifications");
 
 
-    if (!bouton) {
-        return;
-    }
+    if (!bouton) return;
 
 
     if (!("Notification" in window)) {
@@ -281,27 +239,21 @@ function mettreAJourBoutonNotifications() {
 
         bouton.textContent = "Activées";
 
-        return;
-
-    }
-
-
-    if (Notification.permission === "denied") {
+    } else if (Notification.permission === "denied") {
 
         bouton.textContent = "Bloquées";
 
-        return;
+    } else {
+
+        bouton.textContent = "Activer";
 
     }
-
-
-    bouton.textContent = "Activer";
 
 }
 
 
 // ==========================================
-// EXTRAIRE L'HEURE D'UNE TÂCHE
+// DÉTECTION DE L'HEURE
 // ==========================================
 
 function determinerHeure(texte) {
@@ -309,9 +261,16 @@ function determinerHeure(texte) {
     const t = texte.toLowerCase();
 
 
-    // Exemple : 14h30
+    // Exemple :
+    // 23h36
+    // à 23h36
+    // vers 23h36
+
     const heureMinutes =
-        t.match(/(?:à|a|vers)?\s*(\d{1,2})h(\d{1,2})/);
+        t.match(
+            /(?:à|a|vers)?\s*(\d{1,2})h(\d{1,2})/
+        );
+
 
     if (heureMinutes) {
 
@@ -346,9 +305,15 @@ function determinerHeure(texte) {
     }
 
 
-    // Exemple : 14h
+    // Exemple :
+    // 23h
+    // à 23h
+
     const heureSimple =
-        t.match(/(?:à|a|vers)?\s*(\d{1,2})h\b/);
+        t.match(
+            /(?:à|a|vers)?\s*(\d{1,2})h\b/
+        );
+
 
     if (heureSimple) {
 
@@ -380,7 +345,7 @@ function determinerHeure(texte) {
 
 
 // ==========================================
-// CRÉER UN IDENTIFIANT UNIQUE DE TÂCHE
+// ID NOTIFICATION
 // ==========================================
 
 function obtenirIdNotification(tache) {
@@ -390,14 +355,17 @@ function obtenirIdNotification(tache) {
         "|" +
         (tache.date || "") +
         "|" +
-        (tache.heure || NOTIFICATION_HEURE_PAR_DEFAUT)
+        (
+            tache.heure ||
+            NOTIFICATION_HEURE_PAR_DEFAUT
+        )
     );
 
 }
 
 
 // ==========================================
-// VÉRIFIER SI LA NOTIFICATION A DÉJÀ ÉTÉ ENVOYÉE
+// NOTIFICATION DÉJÀ ENVOYÉE
 // ==========================================
 
 function notificationDejaEnvoyee(id) {
@@ -416,7 +384,7 @@ function notificationDejaEnvoyee(id) {
 
 
 // ==========================================
-// MARQUER UNE NOTIFICATION COMME ENVOYÉE
+// MARQUER NOTIFICATION COMME ENVOYÉE
 // ==========================================
 
 function marquerNotificationEnvoyee(id) {
@@ -455,6 +423,10 @@ async function envoyerNotification(tache) {
         Notification.permission !== "granted"
     ) {
 
+        console.log(
+            "⚠️ Notifications non autorisées."
+        );
+
         return;
 
     }
@@ -464,7 +436,14 @@ async function envoyerNotification(tache) {
         obtenirIdNotification(tache);
 
 
-    if (notificationDejaEnvoyee(id)) {
+    if (
+        notificationDejaEnvoyee(id)
+    ) {
+
+        console.log(
+            "ℹ️ Notification déjà envoyée :",
+            tache.texte
+        );
 
         return;
 
@@ -504,15 +483,17 @@ async function envoyerNotification(tache) {
 
         marquerNotificationEnvoyee(id);
 
+
         console.log(
             "🔔 Notification envoyée :",
             tache.texte
         );
 
+
     } catch (erreur) {
 
         console.error(
-            "Erreur notification :",
+            "❌ Erreur lors de l'envoi de la notification :",
             erreur
         );
 
@@ -528,7 +509,9 @@ async function envoyerNotification(tache) {
 function programmerNotification(tache) {
 
     if (!tache.date) {
+
         return;
+
     }
 
 
@@ -564,6 +547,11 @@ function programmerNotification(tache) {
 
     if (difference <= 0) {
 
+        console.log(
+            "⏭️ Notification ignorée car l'heure est passée :",
+            tache.texte
+        );
+
         return;
 
     }
@@ -573,7 +561,9 @@ function programmerNotification(tache) {
         obtenirIdNotification(tache);
 
 
-    if (notificationDejaEnvoyee(id)) {
+    if (
+        notificationDejaEnvoyee(id)
+    ) {
 
         return;
 
@@ -610,10 +600,10 @@ function programmerNotification(tache) {
 
 function programmerToutesLesNotifications() {
 
-    // Annuler les anciens timers
     timersNotifications.forEach(
         timer => clearTimeout(timer)
     );
+
 
     timersNotifications = [];
 
@@ -641,9 +631,7 @@ function programmerToutesLesNotifications() {
 
             if (!tache.terminee) {
 
-                programmerNotification(
-                    tache
-                );
+                programmerNotification(tache);
 
             }
 
@@ -665,9 +653,7 @@ function ouvrirParametres() {
         );
 
 
-    if (!menu) {
-        return;
-    }
+    if (!menu) return;
 
 
     if (
@@ -697,11 +683,10 @@ function determinerCategorie(texte) {
 
     if (
         t.includes("acheter") ||
-        t.includes("achat") ||
         t.includes("courses") ||
         t.includes("lait") ||
         t.includes("chaussures") ||
-        t.includes("magasin")
+        t.includes("achat")
     ) {
 
         return {
@@ -713,21 +698,17 @@ function determinerCategorie(texte) {
 
 
     if (
-        t.includes("devoir") ||
+        t.includes("cours") ||
         t.includes("contrôle") ||
         t.includes("controle") ||
-        t.includes("cours") ||
-        t.includes("réviser") ||
-        t.includes("reviser") ||
+        t.includes("devoir") ||
         t.includes("maths") ||
         t.includes("anglais") ||
         t.includes("français") ||
         t.includes("francais") ||
-        t.includes("physique") ||
         t.includes("svt") ||
         t.includes("ses") ||
-        t.includes("nsi") ||
-        t.includes("dm")
+        t.includes("physique")
     ) {
 
         return {
@@ -739,12 +720,11 @@ function determinerCategorie(texte) {
 
 
     if (
+        t.includes("jouer") ||
         t.includes("gta") ||
         t.includes("valorant") ||
-        t.includes("jouer") ||
         t.includes("jeu") ||
-        t.includes("playstation") ||
-        t.includes("ps5") ||
+        t.includes("gaming") ||
         t.includes("film") ||
         t.includes("série") ||
         t.includes("serie")
@@ -759,13 +739,12 @@ function determinerCategorie(texte) {
 
 
     if (
+        t.includes("ranger") ||
         t.includes("ménage") ||
         t.includes("menage") ||
-        t.includes("ranger") ||
         t.includes("nettoyer") ||
-        t.includes("maison") ||
-        t.includes("linge") ||
-        t.includes("vaisselle")
+        t.includes("chambre") ||
+        t.includes("maison")
     ) {
 
         return {
@@ -780,11 +759,10 @@ function determinerCategorie(texte) {
         t.includes("sport") ||
         t.includes("foot") ||
         t.includes("football") ||
-        t.includes("muscu") ||
         t.includes("courir") ||
-        t.includes("vélo") ||
-        t.includes("velo") ||
-        t.includes("gym")
+        t.includes("muscu") ||
+        t.includes("entraînement") ||
+        t.includes("entrainement")
     ) {
 
         return {
@@ -799,10 +777,9 @@ function determinerCategorie(texte) {
         t.includes("rendez-vous") ||
         t.includes("rendez vous") ||
         t.includes("rdv") ||
-        t.includes("médecin") ||
-        t.includes("medecin") ||
         t.includes("dentiste") ||
-        t.includes("coiffeur")
+        t.includes("médecin") ||
+        t.includes("medecin")
     ) {
 
         return {
@@ -822,95 +799,162 @@ function determinerCategorie(texte) {
 
 
 // ==========================================
-// DATES
+// DÉTECTION DE DATE
 // ==========================================
-
-function ajouterJours(date, nombre) {
-
-    const resultat =
-        new Date(date);
-
-    resultat.setDate(
-        resultat.getDate() + nombre
-    );
-
-    return resultat;
-
-}
-
-
-function formaterDate(date) {
-
-    const annee =
-        date.getFullYear();
-
-    const mois =
-        String(
-            date.getMonth() + 1
-        ).padStart(2, "0");
-
-    const jour =
-        String(
-            date.getDate()
-        ).padStart(2, "0");
-
-
-    return (
-        `${annee}-${mois}-${jour}`
-    );
-
-}
-
 
 function determinerDate(texte) {
 
     const t =
         texte.toLowerCase();
 
+
     const aujourdHui =
         new Date();
 
 
-    if (
-        t.includes("après-demain") ||
-        t.includes("apres-demain")
-    ) {
-
-        return formaterDate(
-            ajouterJours(
-                aujourdHui,
-                2
-            )
-        );
-
-    }
-
-
-    if (t.includes("demain")) {
-
-        return formaterDate(
-            ajouterJours(
-                aujourdHui,
-                1
-            )
-        );
-
-    }
-
+    // ------------------------------------------
+    // Aujourd'hui
+    // ------------------------------------------
 
     if (
         t.includes("aujourd'hui") ||
         t.includes("aujourd’hui")
     ) {
 
-        return formaterDate(
+        return formatDate(
             aujourdHui
         );
 
     }
 
 
-    const jours = {
+    // ------------------------------------------
+    // Demain
+    // ------------------------------------------
+
+    if (
+        t.includes("demain")
+    ) {
+
+        const date =
+            new Date(
+                aujourdHui
+            );
+
+
+        date.setDate(
+            date.getDate() + 1
+        );
+
+
+        return formatDate(date);
+
+    }
+
+
+    // ------------------------------------------
+    // Après-demain
+    // ------------------------------------------
+
+    if (
+        t.includes("après-demain") ||
+        t.includes("apres-demain") ||
+        t.includes("après demain") ||
+        t.includes("apres demain")
+    ) {
+
+        const date =
+            new Date(
+                aujourdHui
+            );
+
+
+        date.setDate(
+            date.getDate() + 2
+        );
+
+
+        return formatDate(date);
+
+    }
+
+
+    // ------------------------------------------
+    // Dans X jours
+    // ------------------------------------------
+
+    const dansJours =
+        t.match(
+            /dans\s+(\d+)\s+jours?/
+        );
+
+
+    if (dansJours) {
+
+        const nombre =
+            parseInt(
+                dansJours[1],
+                10
+            );
+
+
+        const date =
+            new Date(
+                aujourdHui
+            );
+
+
+        date.setDate(
+            date.getDate() + nombre
+        );
+
+
+        return formatDate(date);
+
+    }
+
+
+    // ------------------------------------------
+    // Dans X semaines
+    // ------------------------------------------
+
+    const dansSemaines =
+        t.match(
+            /dans\s+(\d+)\s+semaines?/
+        );
+
+
+    if (dansSemaines) {
+
+        const nombre =
+            parseInt(
+                dansSemaines[1],
+                10
+            );
+
+
+        const date =
+            new Date(
+                aujourdHui
+            );
+
+
+        date.setDate(
+            date.getDate() +
+            nombre * 7
+        );
+
+
+        return formatDate(date);
+
+    }
+
+
+    // ------------------------------------------
+    // Jours de la semaine
+    // ------------------------------------------
+
+    const joursSemaine = {
 
         dimanche: 0,
         lundi: 1,
@@ -924,11 +968,11 @@ function determinerDate(texte) {
 
 
     for (
-        const jourNom in jours
+        const jour in joursSemaine
     ) {
 
         if (
-            t.includes(jourNom)
+            t.includes(jour)
         ) {
 
             const date =
@@ -936,11 +980,13 @@ function determinerDate(texte) {
                     aujourdHui
                 );
 
+
             const jourActuel =
                 date.getDay();
 
+
             let difference =
-                jours[jourNom] -
+                joursSemaine[jour] -
                 jourActuel;
 
 
@@ -951,67 +997,23 @@ function determinerDate(texte) {
             }
 
 
-            return formaterDate(
-                ajouterJours(
-                    aujourdHui,
-                    difference
-                )
+            date.setDate(
+                date.getDate() +
+                difference
             );
+
+
+            return formatDate(date);
 
         }
 
     }
 
 
-    const correspondanceJours =
-        t.match(
-            /dans\s+(\d+)\s+jours?/
-        );
-
-
-    if (correspondanceJours) {
-
-        const nombre =
-            parseInt(
-                correspondanceJours[1],
-                10
-            );
-
-
-        return formaterDate(
-            ajouterJours(
-                aujourdHui,
-                nombre
-            )
-        );
-
-    }
-
-
-    const correspondanceSemaines =
-        t.match(
-            /dans\s+(\d+)\s+semaines?/
-        );
-
-
-    if (correspondanceSemaines) {
-
-        const nombre =
-            parseInt(
-                correspondanceSemaines[1],
-                10
-            );
-
-
-        return formaterDate(
-            ajouterJours(
-                aujourdHui,
-                nombre * 7
-            )
-        );
-
-    }
-
+    // ------------------------------------------
+    // Dates françaises simples
+    // Exemple : 25 septembre
+    // ------------------------------------------
 
     const mois = {
 
@@ -1034,32 +1036,33 @@ function determinerDate(texte) {
     };
 
 
-    const correspondanceDate =
+    const dateTexte =
         t.match(
             /(\d{1,2})\s+(janvier|février|fevrier|mars|avril|mai|juin|juillet|août|aout|septembre|octobre|novembre|décembre|decembre)/
         );
 
 
-    if (correspondanceDate) {
+    if (dateTexte) {
 
         const jour =
             parseInt(
-                correspondanceDate[1],
+                dateTexte[1],
                 10
             );
 
+
         const moisNom =
-            correspondanceDate[2];
+            dateTexte[2];
 
 
-        let annee =
-            aujourdHui.getFullYear();
+        const moisNumero =
+            mois[moisNom];
 
 
         const date =
             new Date(
-                annee,
-                mois[moisNom],
+                aujourdHui.getFullYear(),
+                moisNumero,
                 jour
             );
 
@@ -1068,22 +1071,14 @@ function determinerDate(texte) {
             date < aujourdHui
         ) {
 
-            annee++;
+            date.setFullYear(
+                date.getFullYear() + 1
+            );
 
         }
 
 
-        const vraieDate =
-            new Date(
-                annee,
-                mois[moisNom],
-                jour
-            );
-
-
-        return formaterDate(
-            vraieDate
-        );
+        return formatDate(date);
 
     }
 
@@ -1091,6 +1086,49 @@ function determinerDate(texte) {
     return null;
 
 }
+
+
+// ==========================================
+// FORMAT DATE
+// ==========================================
+
+function formatDate(date) {
+
+    const annee =
+        date.getFullYear();
+
+
+    const mois =
+        String(
+            date.getMonth() + 1
+        ).padStart(
+            2,
+            "0"
+        );
+
+
+    const jour =
+        String(
+            date.getDate()
+        ).padStart(
+            2,
+            "0"
+        );
+
+
+    return (
+        `${annee}-${mois}-${jour}`
+    );
+
+}
+
+
+// ==========================================
+// STOCKAGE LOCAL
+// ==========================================
+
+const CLE_TACHES =
+    "rangeca_taches";
 
 
 // ==========================================
@@ -1102,7 +1140,7 @@ function supprimerTache(index) {
     const taches =
         JSON.parse(
             localStorage.getItem(
-                "rangeca_taches"
+                CLE_TACHES
             ) || "[]"
         );
 
@@ -1114,7 +1152,7 @@ function supprimerTache(index) {
 
 
     localStorage.setItem(
-        "rangeca_taches",
+        CLE_TACHES,
         JSON.stringify(taches)
     );
 
@@ -1135,15 +1173,19 @@ function modifierTache(index) {
     const taches =
         JSON.parse(
             localStorage.getItem(
-                "rangeca_taches"
+                CLE_TACHES
             ) || "[]"
         );
 
 
+    const tache =
+        taches[index];
+
+
     const nouvelleValeur =
         prompt(
-            "Modifier la tâche :",
-            taches[index].texte
+            "✏️ Modifier la tâche :",
+            tache.texte
         );
 
 
@@ -1165,35 +1207,34 @@ function modifierTache(index) {
     }
 
 
-    taches[index].texte =
+    tache.texte =
         nouvelleValeur.trim();
 
 
-    taches[index].categorie =
+    tache.categorie =
         determinerCategorie(
             nouvelleValeur
         );
 
 
-    taches[index].date =
+    tache.date =
         determinerDate(
             nouvelleValeur
         );
 
 
-    taches[index].heure =
+    tache.heure =
         determinerHeure(
             nouvelleValeur
         );
 
 
-    // Une tâche modifiée doit pouvoir
-    // déclencher une nouvelle notification
-    taches[index].terminee = false;
+    tache.terminee =
+        false;
 
 
     localStorage.setItem(
-        "rangeca_taches",
+        CLE_TACHES,
         JSON.stringify(taches)
     );
 
@@ -1206,7 +1247,7 @@ function modifierTache(index) {
 
 
 // ==========================================
-// COCHER / DÉCOCHER
+// CHANGER ÉTAT TÂCHE
 // ==========================================
 
 function changerEtatTache(index) {
@@ -1214,7 +1255,7 @@ function changerEtatTache(index) {
     const taches =
         JSON.parse(
             localStorage.getItem(
-                "rangeca_taches"
+                CLE_TACHES
             ) || "[]"
         );
 
@@ -1224,7 +1265,7 @@ function changerEtatTache(index) {
 
 
     localStorage.setItem(
-        "rangeca_taches",
+        CLE_TACHES,
         JSON.stringify(taches)
     );
 
@@ -1248,15 +1289,13 @@ function afficherTaches() {
         );
 
 
-    if (!resultat) {
-        return;
-    }
+    if (!resultat) return;
 
 
     const taches =
         JSON.parse(
             localStorage.getItem(
-                "rangeca_taches"
+                CLE_TACHES
             ) || "[]"
         );
 
@@ -1266,11 +1305,9 @@ function afficherTaches() {
     ) {
 
         resultat.innerHTML = `
-
             <p class="empty">
                 Ton classement apparaîtra ici...
             </p>
-
         `;
 
         return;
@@ -1278,177 +1315,151 @@ function afficherTaches() {
     }
 
 
-    const categories = {};
+    resultat.innerHTML = "";
 
 
     taches.forEach(
         (tache, index) => {
 
+            const div =
+                document.createElement(
+                    "div"
+                );
+
+
+            div.className =
+                "tache";
+
+
             if (
-                !categories[
-                    tache.categorie.nom
-                ]
+                tache.terminee
             ) {
 
-                categories[
-                    tache.categorie.nom
-                ] = {
-
-                    emoji:
-                        tache.categorie.emoji,
-
-                    taches: []
-
-                };
+                div.classList.add(
+                    "terminee"
+                );
 
             }
 
 
-            categories[
-                tache.categorie.nom
-            ].taches.push({
+            let dateAffichage = "";
 
-                ...tache,
 
-                index: index
+            if (
+                tache.date
+            ) {
 
-            });
+                const date =
+                    new Date(
+                        `${tache.date}T00:00:00`
+                    );
+
+
+                dateAffichage =
+                    date.toLocaleDateString(
+                        "fr-FR",
+                        {
+                            weekday: "long",
+                            day: "numeric",
+                            month: "long"
+                        }
+                    );
+
+
+                if (
+                    tache.heure
+                ) {
+
+                    dateAffichage +=
+                        ` à ${tache.heure}`;
+
+                }
+
+            }
+
+
+            div.innerHTML = `
+
+                <div class="tache-gauche">
+
+                    <input
+                        type="checkbox"
+                        ${tache.terminee ? "checked" : ""}
+                        onchange="changerEtatTache(${index})"
+                    >
+
+                    <div>
+
+                        <div class="tache-texte">
+                            ${echapperHTML(tache.texte)}
+                        </div>
+
+                        <div class="tache-infos">
+
+                            ${tache.categorie.emoji}
+                            ${tache.categorie.nom}
+
+                            ${
+                                dateAffichage
+                                    ? ` • 📅 ${dateAffichage}`
+                                    : ""
+                            }
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <div class="tache-actions">
+
+                    <button
+                        onclick="modifierTache(${index})"
+                        title="Modifier"
+                    >
+                        ✏️
+                    </button>
+
+                    <button
+                        onclick="supprimerTache(${index})"
+                        title="Supprimer"
+                    >
+                        🗑️
+                    </button>
+
+                </div>
+
+            `;
+
+
+            resultat.appendChild(
+                div
+            );
 
         }
     );
 
-
-    let html = "";
-
-
-    for (
-        const nomCategorie in categories
-    ) {
-
-        const categorie =
-            categories[
-                nomCategorie
-            ];
+}
 
 
-        html += `
+// ==========================================
+// PROTECTION HTML
+// ==========================================
 
-            <div class="categorie">
+function echapperHTML(texte) {
 
-                <h3>
-                    ${categorie.emoji}
-                    ${nomCategorie}
-                </h3>
-
-        `;
-
-
-        categorie.taches.forEach(
-            tache => {
-
-                const classeTerminee =
-                    tache.terminee
-                        ? "tache-terminee"
-                        : "";
-
-
-                let dateHTML = "";
-
-
-                if (
-                    tache.date
-                ) {
-
-                    const date =
-                        new Date(
-                            tache.date +
-                            "T00:00:00"
-                        );
-
-
-                    dateHTML = `
-
-                        <span class="date-tache">
-
-                            📅
-                            ${date.toLocaleDateString(
-                                "fr-FR",
-                                {
-                                    day: "numeric",
-                                    month: "long"
-                                }
-                            )}
-
-                            ${
-                                tache.heure
-                                    ? " à " +
-                                      tache.heure
-                                    : ""
-                            }
-
-                        </span>
-
-                    `;
-
-                }
-
-
-                html += `
-
-                    <div class="tache ${classeTerminee}">
-
-                        <input
-                            type="checkbox"
-                            ${tache.terminee ? "checked" : ""}
-                            onchange="changerEtatTache(${tache.index})"
-                        >
-
-
-                        <div class="contenu-tache">
-
-                            <span class="texte-tache">
-                                ${tache.texte}
-                            </span>
-
-                            ${dateHTML}
-
-                        </div>
-
-
-                        <button
-                            onclick="modifierTache(${tache.index})"
-                            title="Modifier"
-                        >
-                            ✏️
-                        </button>
-
-
-                        <button
-                            onclick="supprimerTache(${tache.index})"
-                            title="Supprimer"
-                        >
-                            🗑️
-                        </button>
-
-                    </div>
-
-                `;
-
-            }
+    const div =
+        document.createElement(
+            "div"
         );
 
 
-        html += `
-
-            </div>
-
-        `;
-
-    }
+    div.textContent =
+        texte;
 
 
-    resultat.innerHTML =
-        html;
+    return div.innerHTML;
 
 }
 
@@ -1465,19 +1476,17 @@ async function ranger() {
         );
 
 
-    if (!textarea) {
-        return;
-    }
+    if (!textarea) return;
 
 
-    const texte =
+    const contenu =
         textarea.value.trim();
 
 
-    if (!texte) {
+    if (!contenu) {
 
         alert(
-            "Écris au moins une chose à ranger 🙂"
+            "✏️ Écris quelque chose à ranger !"
         );
 
         return;
@@ -1486,22 +1495,20 @@ async function ranger() {
 
 
     const lignes =
-        texte
+        contenu
             .split("\n")
             .map(
-                ligne =>
-                    ligne.trim()
+                ligne => ligne.trim()
             )
             .filter(
-                ligne =>
-                    ligne !== ""
+                ligne => ligne !== ""
             );
 
 
-    const anciennesTaches =
+    const taches =
         JSON.parse(
             localStorage.getItem(
-                "rangeca_taches"
+                CLE_TACHES
             ) || "[]"
         );
 
@@ -1540,9 +1547,7 @@ async function ranger() {
                 date,
 
             heure:
-                date
-                    ? heure
-                    : null,
+                heure,
 
             terminee:
                 false
@@ -1550,10 +1555,12 @@ async function ranger() {
         };
 
 
-        anciennesTaches.push(
+        taches.push(
             nouvelleTache
         );
 
+
+        // Sauvegarde Supabase
 
         await sauvegarderTacheSupabase(
             ligne,
@@ -1566,10 +1573,8 @@ async function ranger() {
 
 
     localStorage.setItem(
-        "rangeca_taches",
-        JSON.stringify(
-            anciennesTaches
-        )
+        CLE_TACHES,
+        JSON.stringify(taches)
     );
 
 
@@ -1578,18 +1583,87 @@ async function ranger() {
 
     afficherTaches();
 
+
     programmerToutesLesNotifications();
+
+
+    console.log(
+        "✅ Informations rangées :",
+        lignes
+    );
 
 }
 
 
 // ==========================================
-// CHARGEMENT
+// SERVICE WORKER
+// ==========================================
+
+async function enregistrerServiceWorker() {
+
+    if (
+        !("serviceWorker" in navigator)
+    ) {
+
+        console.error(
+            "❌ Les Service Workers ne sont pas disponibles."
+        );
+
+        return null;
+
+    }
+
+
+    try {
+
+        const registration =
+            await navigator.serviceWorker.register(
+                "./service-worker.js?v=5",
+                {
+                    scope: "./"
+                }
+            );
+
+
+        console.log(
+            "✅ RangeÇa : Service Worker enregistré",
+            registration
+        );
+
+
+        await registration.update();
+
+
+        return registration;
+
+
+    } catch (erreur) {
+
+        console.error(
+            "❌ RangeÇa : impossible d'enregistrer le Service Worker",
+            erreur
+        );
+
+
+        return null;
+
+    }
+
+}
+
+
+// ==========================================
+// INITIALISATION
 // ==========================================
 
 window.addEventListener(
     "load",
     async () => {
+
+        console.log(
+            "🚀 RangeÇa démarre..."
+        );
+
 
         afficherTaches();
 
@@ -1597,59 +1671,14 @@ window.addEventListener(
         mettreAJourBoutonNotifications();
 
 
-        // Enregistrement du Service Worker
         await enregistrerServiceWorker();
 
 
-        // Test Supabase
-        testerSupabase();
+        await testerSupabase();
 
 
-        // Reprogrammer les notifications
-        // si elles sont déjà autorisées
         programmerToutesLesNotifications();
 
     }
 );
-
-
-// ==========================================
-// SERVICE WORKER
-// ==========================================
-
-if (
-    "serviceWorker" in navigator
-) {
-
-    window.addEventListener(
-        "load",
-        async () => {
-
-            try {
-
-                const registration =
-                    await navigator.serviceWorker.register(
-                        "./service-worker.js?v=2"
-                    );
-
-
-                console.log(
-                    "✅ Service Worker enregistré"
-                );
-
-
-                await registration.update();
-
-            } catch (erreur) {
-
-                console.error(
-                    "Erreur Service Worker :",
-                    erreur
-                );
-
-            }
-
-        }
-    );
-
-}
+```
