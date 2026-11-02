@@ -1,157 +1,77 @@
 <!DOCTYPE html>
 <html lang="fr">
-
 <head>
-
     <meta charset="UTF-8">
-
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <title>RangeÇa 🧹</title>
+    <meta name="theme-color" content="#171923">
 
-    <!-- Style du site -->
+    <link rel="icon" href="./logorc.png">
+    <link rel="manifest" href="./manifest.json">
     <link rel="stylesheet" href="./style.css">
 
-    <!-- Manifest PWA -->
-    <link rel="manifest" href="./manifest.json">
-
-    <!-- Icône iPhone -->
-    <link rel="apple-touch-icon" sizes="180x180" href="./logorc.png">
-
-    <!-- Couleur de l'application -->
-    <meta name="theme-color" content="#6366f1">
-
+    <script src="./script.js" defer></script>
 </head>
-
 
 <body>
 
-    <div class="container">
+    <header>
+        <div class="logo">🧹 RangeÇa</div>
+        <p>Transforme ton bazar en quelque chose de clair.</p>
+    </header>
 
-        <header>
+    <main>
 
-            <div class="logo">
-                🧹 RangeÇa
-            </div>
+        <section class="ajout">
+            <h2>Qu'est-ce que tu as à faire ?</h2>
 
-            <p>
-                Transforme ton bazar en quelque chose de clair.
-            </p>
+            <textarea
+                id="texte"
+                placeholder="Exemple :&#10;Faire mes devoirs de maths&#10;Acheter du pain&#10;Aller au sport..."
+            ></textarea>
 
-        </header>
-
-
-        <!-- Paramètres -->
-
-        <div class="parametres">
-
-            <button
-                onclick="ouvrirParametres()"
-                class="bouton-parametres"
-            >
-                ⚙️ Paramètres
+            <button id="boutonRanger" class="btn-principal" type="button">
+                Ranger mes tâches ✨
             </button>
 
+            <p id="message" aria-live="polite"></p>
+        </section>
 
-            <div
-                id="menuParametres"
-                class="menu-parametres"
-            >
+        <section class="taches">
 
-                <h3>
-                    ⚙️ Paramètres
-                </h3>
-
-
-                <div class="option-parametre">
-
-                    <span>
-                        🔔 Notifications
-                    </span>
-
-                    <button
-                        onclick="activerNotifications()"
-                        id="boutonNotifications"
-                        class="petit-bouton"
-                    >
-                        Activer
-                    </button>
-
-                </div>
-
+            <div class="titre-taches">
+                <h2>Mes tâches</h2>
+                <span id="compteur">0 tâche</span>
             </div>
 
-        </div>
-
-
-        <main>
-
-            <!-- Zone de saisie -->
-
-            <section class="input-card">
-
-                <h2>
-                    📝 Qu'est-ce que tu dois ranger ?
-                </h2>
-
-
-                <textarea
-                    id="texte"
-                    placeholder="Écris tout ce que tu as en tête...
-
-Exemple :
-Contrôle maths mardi
-Acheter du lait
-Devoir anglais vendredi
-Jouer à GTA
-Acheter des chaussures"
-                ></textarea>
-
-
-                <button onclick="ranger()">
-                    ✨ Ranger mes informations
+            <div class="filtres">
+                <button class="filtre actif" data-filtre="toutes" type="button">
+                    Toutes
                 </button>
 
-            </section>
+                <button class="filtre" data-filtre="actives" type="button">
+                    À faire
+                </button>
 
+                <button class="filtre" data-filtre="terminees" type="button">
+                    Terminées
+                </button>
+            </div>
 
-            <!-- Résultats -->
+            <div id="resultat"></div>
 
-            <section class="result-card">
+            <button id="supprimerTerminees" class="btn-secondaire" type="button">
+                Supprimer les tâches terminées
+            </button>
 
-                <h2>
-                    📋 Résultat
-                </h2>
+        </section>
 
+    </main>
 
-                <div id="resultat">
-
-                    <p class="empty">
-                        Ton classement apparaîtra ici...
-                    </p>
-
-                </div>
-
-            </section>
-
-        </main>
-
-
-        <footer>
-
-            <p>
-                RangeÇa — Simple. Clair. Organisé. 🧹
-            </p>
-
-        </footer>
-
-    </div>
-
-
-    <!-- JavaScript -->
-
-    <script src="./script.js?v=1000"></script>
+    <footer>
+        <p>RangeÇa 🧹 — Organise ta vie simplement.</p>
+    </footer>
 
 </body>
-
 </html>
