@@ -1,1684 +1,848 @@
-```javascript
-console.log("RANGECA NOTIFICATIONS V2");
+
+"use strict";
+
+/* =====================================
+   RANGEÇA — SCRIPT PRINCIPAL
+   ===================================== */
+
+const $ = (id) => document.getElementById(id);
+
+const STORAGE_KEY = "rangeca_taches";
+const SETTINGS_KEY = "rangeca_parametres";
+
+const categories = {
+    ecole: "📚 École",
+    achats: "🛒 Achats",
+    maison: "🏠 Maison",
+    sport: "⚽ Sport",
+    loisirs: "🎮 Loisirs",
+    rendezvous: "📌 Rendez-vous",
+    autre: "📦 Autres"
+};
+
+let taches = [];
+let parametres = {
+    nom: "",
+    theme: "sombre",
+    notifications: false,
+    rappels: false,
+    heureRappel: "18:00"
+};
+
+let pageActuelle = "accueil";
+let recherche = "";
 
 
-// ==========================================
-// SUPABASE
-// ==========================================
+/* =====================================
+   INITIALISATION ET SAUVEGARDE
+   ===================================== */
 
-const SUPABASE_URL = "https://wqlowlqlvujutearzcdi.supabase.co";
-
-const SUPABASE_KEY = "sb_publishable_uDrkmlCqmXuU73vn1OLKVw_24tvyedg";
-
-
-// ==========================================
-// NOTIFICATIONS
-// ==========================================
-
-const NOTIFICATION_HEURE_PAR_DEFAUT = "18:00";
-
-let timersNotifications = [];
-
-
-// ==========================================
-// TEST SUPABASE
-// ==========================================
-
-async function testerSupabase() {
-
+function chargerDonnees() {
     try {
-
-        const reponse = await fetch(
-            `${SUPABASE_URL}/rest/v1/taches?select=*`,
-            {
-                method: "GET",
-
-                headers: {
-                    "apikey": SUPABASE_KEY
-                }
-            }
-        );
-
-        if (!reponse.ok) {
-            throw new Error(`Erreur HTTP ${reponse.status}`);
-        }
-
-        const donnees = await reponse.json();
-
-        console.log("✅ Supabase fonctionne :", donnees);
-
-    } catch (erreur) {
-
-        console.error(
-            "❌ Erreur Supabase :",
-            erreur
-        );
-
+        const sauvegarde = JSON.parse(localStorage.getItem(STORAGE_KEY));
+        if (Array.isArray(sauvegarde)) taches = sauvegarde;
+    } catch (e) {
+        console.error("Erreur de chargement des tâches", e);
     }
 
+    try {
+        const reglages = JSON.parse(localStorage.getItem(SETTINGS_KEY));
+        if (reglages && typeof reglages === "object") {
+            parametres = { ...parametres, ...reglages };
+        }
+    } catch (e) {
+        console.error("Erreur de chargement des paramètres", e);
+    }
+
+    // Compatibilité avec les anciennes tâches
+    taches = taches.map(t => ({
+        ...t,
+        id: String(t.id || creerId()),
+        nom: String(t.nom || t.titre || "Tâche sans nom"),
+        categorie: categories[t.categorie] ? t.categorie : "autre",
+        priorite: t.priorite || "normale",
+        terminee: Boolean(t.terminee),
+        date: t.date || "",
+        heure: t.heure || "",
+        description: t.description || "",
+        rappel: Boolean(t.rappel)
+    }));
+}
+
+function sauvegarder() {
+    try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(taches));
+        localStorage.setItem(SETTINGS_KEY, JSON.stringify(parametres));
+    } catch (e) {
+        notifier("Impossible de sauvegarder les données.");
+        console.error(e);
+    }
+}
+
+function creerId() {
+    return window.crypto?.randomUUID?.() ||
+        Date.now().toString(36) + Math.random().toString(36).slice(2);
 }
 
 
-// ==========================================
-// SAUVEGARDE SUPABASE
-// ==========================================
+/* =====================================
+   MESSAGES
+   ===================================== */
 
-async function sauvegarderTacheSupabase(
-    texte,
-    categorie,
-    date,
-    heure = NOTIFICATION_HEURE_PAR_DEFAUT
-) {
+function notifier(message) {
+    const conteneur = $("toastContainer");
+    if (!conteneur) return;
 
-    try {
+    const toast = document.createElement("div");
+    toast.className = "toast";
+    toast.textContent = message;
+    conteneur.appendChild(toast);
 
-        const reponse = await fetch(
-            `${SUPABASE_URL}/rest/v1/taches`,
-            {
-                method: "POST",
-
-                headers: {
-                    "Content-Type": "application/json",
-                    "apikey": SUPABASE_KEY,
-                    "Authorization": `Bearer ${SUPABASE_KEY}`,
-                    "Prefer": "return=minimal"
-                },
-
-                body: JSON.stringify({
-
-                    texte: texte,
-
-                    categorie: categorie,
-
-                    date_tache: date || null,
-
-                    heure_notification:
-                        date
-                            ? `${heure}:00`
-                            : null,
-
-                    notification_envoyee: false
-
-                })
-            }
-        );
-
-
-        if (!reponse.ok) {
-
-            const erreurTexte = await reponse.text();
-
-            throw new Error(
-                `HTTP ${reponse.status} : ${erreurTexte}`
-            );
-
-        }
-
-
-        console.log(
-            "✅ Tâche sauvegardée dans Supabase :",
-            texte
-        );
-
-
-    } catch (erreur) {
-
-        console.error(
-            "❌ Impossible de sauvegarder dans Supabase :",
-            erreur
-        );
-
-    }
-
+    setTimeout(() => toast.remove(), 3500);
 }
 
 
-// ==========================================
-// NOTIFICATIONS — ACTIVATION
-// ==========================================
+/* =====================================
+   NAVIGATION
+   ===================================== */
+
+function ouvrirPage(nom) {
+    const pages = {
+        accueil: "pageAccueil",
+        toutes: "pageToutes",
+        aujourdhui: "pageAujourdhui",
+        terminees: "pageTerminees",
+        parametres: "pageParametres"
+    };
+
+    if (!pages[nom]) return;
+
+    pageActuelle = nom;
+
+    document.querySelectorAll(".page").forEach(page => {
+        page.classList.remove("active");
+    });
+
+    $(pages[nom]).classList.add("active");
+
+    document.querySelectorAll(".menu-item").forEach(btn => {
+        btn.classList.remove("active");
+    });
+
+    const bouton = document.querySelector(`[data-page="${nom}"]`);
+    if (bouton) bouton.classList.add("active");
+
+    const titres = {
+        accueil: `Bonjour${parametres.nom ? " " + parametres.nom : ""} 👋`,
+        toutes: "Toutes mes tâches",
+        aujourdhui: "Aujourd'hui 📅",
+        terminees: "Tâches terminées",
+        parametres: "Paramètres ⚙️"
+    };
+
+    $("titrePage").textContent = titres[nom];
+
+    $("sidebar")?.classList.remove("ouverte");
+
+    actualiser();
+}
+
+function afficherCategorie(categorie) {
+    recherche = "";
+
+    ouvrirPage("toutes");
+
+    $("filtreCategorie").value = categorie;
+    $("rechercheTache").value = "";
+
+    afficherToutes();
+}
+
+
+/* =====================================
+   AJOUT DE TÂCHES
+   ===================================== */
+
+function ajouterTache(e) {
+    e.preventDefault();
+
+    const nom = $("titreTache").value.trim();
+
+    if (!nom) {
+        notifier("Écris le nom de ta tâche !");
+        $("titreTache").focus();
+        return;
+    }
+
+    const nouvelleTache = {
+        id: creerId(),
+        nom,
+        categorie: $("categorieTache").value,
+        priorite: $("prioriteTache").value,
+        date: $("dateTache").value,
+        heure: $("heureTache").value,
+        description: $("descriptionTache").value.trim(),
+        rappel: $("rappelTache").checked,
+        terminee: false,
+        creeLe: new Date().toISOString()
+    };
+
+    taches.unshift(nouvelleTache);
+
+    sauvegarder();
+    $("formTache").reset();
+
+    actualiser();
+    notifier("Tâche ajoutée avec succès ! ✨");
+}
+
+
+/* =====================================
+   AFFICHAGE DES TÂCHES
+   ===================================== */
+
+function creerCarte(tache) {
+    const carte = document.createElement("article");
+    carte.className = "task-card";
+
+    if (tache.terminee) carte.classList.add("task-done");
+
+    const contenu = document.createElement("div");
+    contenu.className = "task-content";
+
+    const titre = document.createElement("h3");
+    titre.textContent = tache.nom;
+
+    const infos = document.createElement("div");
+    infos.className = "task-infos";
+
+    const categorie = document.createElement("span");
+    categorie.textContent = categories[tache.categorie] || categories.autre;
+
+    const priorite = document.createElement("span");
+    priorite.className = "priority priority-" + tache.priorite;
+    priorite.textContent = {
+        basse: "Basse",
+        normale: "Normale",
+        haute: "Haute",
+        urgente: "Urgente"
+    }[tache.priorite] || "Normale";
+
+    infos.append(categorie, priorite);
+
+    if (tache.date) {
+        const date = document.createElement("span");
+        date.textContent = "📅 " + formaterDate(tache.date);
+        infos.appendChild(date);
+    }
+
+    if (tache.heure) {
+        const heure = document.createElement("span");
+        heure.textContent = "🕒 " + tache.heure;
+        infos.appendChild(heure);
+    }
+
+    contenu.append(titre, infos);
+
+    if (tache.description) {
+        const description = document.createElement("p");
+        description.className = "task-description";
+        description.textContent = tache.description;
+        contenu.appendChild(description);
+    }
+
+    const actions = document.createElement("div");
+    actions.className = "task-actions";
+
+    const boutons = [
+        ["✓", "terminer", tache.terminee ? "Remettre à faire" : "Terminer"],
+        ["✏️", "modifier", "Modifier"],
+        ["🗑️", "supprimer", "Supprimer"]
+    ];
+
+    boutons.forEach(([texte, action, titreBouton]) => {
+        const bouton = document.createElement("button");
+        bouton.type = "button";
+        bouton.className = "task-action";
+        bouton.textContent = texte;
+        bouton.title = titreBouton;
+        bouton.dataset.action = action;
+        bouton.dataset.id = tache.id;
+        actions.appendChild(bouton);
+    });
+
+    carte.append(contenu, actions);
+    return carte;
+}
+
+function afficherListe(element, liste, message) {
+    element.replaceChildren();
+
+    if (!liste.length) {
+        const vide = document.createElement("div");
+        vide.className = "empty-state";
+
+        const emoji = document.createElement("span");
+        emoji.textContent = "✨";
+
+        const titre = document.createElement("h3");
+        titre.textContent = message;
+
+        vide.append(emoji, titre);
+        element.appendChild(vide);
+        return;
+    }
+
+    liste.forEach(tache => {
+        element.appendChild(creerCarte(tache));
+    });
+}
+
+function formaterDate(date) {
+    if (!date) return "";
+
+    const [annee, mois, jour] = date.split("-").map(Number);
+
+    if (!annee || !mois || !jour) return date;
+
+    return new Intl.DateTimeFormat("fr-FR").format(
+        new Date(annee, mois - 1, jour)
+    );
+}
+
+
+/* =====================================
+   ACTIONS SUR LES TÂCHES
+   ===================================== */
+
+function traiterAction(action, id) {
+    const tache = taches.find(t => t.id === id);
+    if (!tache) return;
+
+    if (action === "terminer") {
+        tache.terminee = !tache.terminee;
+        notifier(tache.terminee ? "Tâche terminée ! 🎉" : "Tâche remise à faire.");
+    }
+
+    if (action === "supprimer") {
+        if (!confirm("Supprimer cette tâche ?")) return;
+
+        taches = taches.filter(t => t.id !== id);
+        notifier("Tâche supprimée.");
+    }
+
+    if (action === "modifier") {
+        ouvrirModification(tache);
+        return;
+    }
+
+    sauvegarder();
+    actualiser();
+}
+
+
+/* =====================================
+   MODIFICATION
+   ===================================== */
+
+function ouvrirModification(tache) {
+    $("modifierId").value = tache.id;
+    $("modifierTitre").value = tache.nom;
+    $("modifierCategorie").value = tache.categorie;
+    $("modifierPriorite").value = tache.priorite;
+    $("modifierDate").value = tache.date;
+    $("modifierHeure").value = tache.heure;
+    $("modifierDescription").value = tache.description;
+
+    $("modalModification").hidden = false;
+    $("modifierTitre").focus();
+}
+
+function fermerModification() {
+    $("modalModification").hidden = true;
+}
+
+function enregistrerModification(e) {
+    e.preventDefault();
+
+    const id = $("modifierId").value;
+    const tache = taches.find(t => t.id === id);
+
+    if (!tache) return;
+
+    const nom = $("modifierTitre").value.trim();
+
+    if (!nom) {
+        notifier("Le nom ne peut pas être vide.");
+        return;
+    }
+
+    tache.nom = nom;
+    tache.categorie = $("modifierCategorie").value;
+    tache.priorite = $("modifierPriorite").value;
+    tache.date = $("modifierDate").value;
+    tache.heure = $("modifierHeure").value;
+    tache.description = $("modifierDescription").value.trim();
+
+    sauvegarder();
+    fermerModification();
+    actualiser();
+
+    notifier("Modifications enregistrées !");
+}
+
+
+/* =====================================
+   RECHERCHE ET FILTRES
+   ===================================== */
+
+function afficherToutes() {
+    let liste = [...taches];
+
+    const categorie = $("filtreCategorie").value;
+    const statut = $("filtreStatut").value;
+    const tri = $("triTaches").value;
+
+    if (categorie !== "toutes") {
+        liste = liste.filter(t => t.categorie === categorie);
+    }
+
+    if (statut === "actives") {
+        liste = liste.filter(t => !t.terminee);
+    }
+
+    if (statut === "terminees") {
+        liste = liste.filter(t => t.terminee);
+    }
+
+    const terme = $("rechercheTache").value.toLowerCase().trim();
+
+    if (terme) {
+        liste = liste.filter(t =>
+            t.nom.toLowerCase().includes(terme) ||
+            t.description.toLowerCase().includes(terme)
+        );
+    }
+
+    if (tri === "recentes") {
+        liste.sort((a, b) => new Date(b.creeLe || 0) - new Date(a.creeLe || 0));
+    }
+
+    if (tri === "anciennes") {
+        liste.sort((a, b) => new Date(a.creeLe || 0) - new Date(b.creeLe || 0));
+    }
+
+    if (tri === "priorite") {
+        const ordre = { urgente: 4, haute: 3, normale: 2, basse: 1 };
+        liste.sort((a, b) => ordre[b.priorite] - ordre[a.priorite]);
+    }
+
+    if (tri === "date") {
+        liste.sort((a, b) =>
+            (a.date || "9999-12-31").localeCompare(b.date || "9999-12-31")
+        );
+    }
+
+    afficherListe($("listeToutes"), liste, "Aucune tâche trouvée.");
+}
+
+
+/* =====================================
+   AUJOURD'HUI ET TERMINÉES
+   ===================================== */
+
+function afficherAujourdhui() {
+    const aujourdHui = new Date();
+    const date = [
+        aujourdHui.getFullYear(),
+        String(aujourdHui.getMonth() + 1).padStart(2, "0"),
+        String(aujourdHui.getDate()).padStart(2, "0")
+    ].join("-");
+
+    const liste = taches.filter(t => !t.terminee && t.date === date);
+
+    afficherListe($("listeAujourdhui"), liste, "Rien de prévu aujourd'hui !");
+}
+
+function afficherTerminees() {
+    afficherListe(
+        $("listeTerminees"),
+        taches.filter(t => t.terminee),
+        "Aucune tâche terminée pour le moment."
+    );
+}
+
+
+/* =====================================
+   STATISTIQUES
+   ===================================== */
+
+function afficherStatistiques() {
+    const total = taches.length;
+    const terminees = taches.filter(t => t.terminee).length;
+    const actives = total - terminees;
+    const progression = total ? Math.round(terminees / total * 100) : 0;
+
+    $("statTotal").textContent = total;
+    $("statActives").textContent = actives;
+    $("statTerminees").textContent = terminees;
+    $("statProgression").textContent = progression + "%";
+}
+
+function actualiser() {
+    afficherStatistiques();
+
+    afficherListe(
+        $("resultat"),
+        taches.filter(t => !t.terminee).slice(0, 5),
+        "Tout est propre ici !"
+    );
+
+    afficherToutes();
+    afficherAujourdhui();
+    afficherTerminees();
+}
+
+
+/* =====================================
+   PARAMÈTRES
+   ===================================== */
+
+function afficherParametres() {
+    $("nomUtilisateur").value = parametres.nom;
+    $("themeApplication").value = parametres.theme;
+    $("rappelGlobal").checked = parametres.rappels;
+    $("heureRappel").value = parametres.heureRappel;
+
+    appliquerTheme();
+    mettreAJourNotifications();
+}
+
+function sauvegarderProfil() {
+    parametres.nom = $("nomUtilisateur").value.trim();
+    sauvegarder();
+    notifier("Profil enregistré !");
+    $("titrePage").textContent =
+        `Bonjour${parametres.nom ? " " + parametres.nom : ""} 👋`;
+}
+
+function appliquerTheme() {
+    document.body.dataset.theme = parametres.theme;
+}
+
+function changerTheme() {
+    parametres.theme = $("themeApplication").value;
+    sauvegarder();
+    appliquerTheme();
+    notifier("Thème modifié !");
+}
+
+
+/* =====================================
+   NOTIFICATIONS
+   ===================================== */
 
 async function activerNotifications() {
-
     if (!("Notification" in window)) {
-
-        alert(
-            "❌ Ton navigateur ne prend pas en charge les notifications."
-        );
-
+        notifier("Ton navigateur ne prend pas en charge les notifications.");
         return;
     }
 
-
     try {
+        const permission = await Notification.requestPermission();
 
-        const permission =
-            await Notification.requestPermission();
+        parametres.notifications = permission === "granted";
+        sauvegarder();
+        mettreAJourNotifications();
 
+        if (parametres.notifications) {
+            notifier("Notifications activées ! 🔔");
 
-        const bouton =
-            document.getElementById("boutonNotifications");
-
-
-        if (permission === "granted") {
-
-            bouton.textContent = "Activées";
-
-            localStorage.setItem(
-                "rangeca_notifications",
-                "activees"
-            );
-
-
-            alert(
-                "🔔 Notifications activées !"
-            );
-
-
-            await enregistrerServiceWorker();
-
-            programmerToutesLesNotifications();
-
-
-        } else if (permission === "denied") {
-
-            bouton.textContent = "Bloquées";
-
-            localStorage.setItem(
-                "rangeca_notifications",
-                "bloquees"
-            );
-
-
-            alert(
-                "⚠️ Les notifications sont bloquées dans ton navigateur."
-            );
-
-
+            new Notification("RangeÇa 🧹", {
+                body: "Tes notifications sont activées."
+            });
         } else {
-
-            bouton.textContent = "Activer";
-
+            notifier("Autorisation de notification refusée.");
         }
-
-
-    } catch (erreur) {
-
-        console.error(
-            "❌ Erreur notifications :",
-            erreur
-        );
-
+    } catch (e) {
+        notifier("Impossible d'activer les notifications.");
+        console.error(e);
     }
-
 }
 
-
-// ==========================================
-// BOUTON NOTIFICATIONS
-// ==========================================
-
-function mettreAJourBoutonNotifications() {
-
-    const bouton =
-        document.getElementById("boutonNotifications");
-
-
-    if (!bouton) return;
-
-
-    if (!("Notification" in window)) {
-
-        bouton.textContent = "Indisponibles";
-
-        return;
-
-    }
-
-
-    if (Notification.permission === "granted") {
-
-        bouton.textContent = "Activées";
-
-    } else if (Notification.permission === "denied") {
-
-        bouton.textContent = "Bloquées";
-
-    } else {
-
-        bouton.textContent = "Activer";
-
-    }
-
+function mettreAJourNotifications() {
+    $("statutNotifications").textContent =
+        parametres.notifications
+            ? "Notifications autorisées."
+            : "Notifications non activées.";
 }
 
+function verifierRappels() {
+    if (!parametres.notifications || !parametres.rappels) return;
+    if (!("Notification" in window) || Notification.permission !== "granted") return;
 
-// ==========================================
-// DÉTECTION DE L'HEURE
-// ==========================================
+    const maintenant = new Date();
 
-function determinerHeure(texte) {
+    const heureActuelle =
+        String(maintenant.getHours()).padStart(2, "0") + ":" +
+        String(maintenant.getMinutes()).padStart(2, "0");
 
-    const t = texte.toLowerCase();
+    if (heureActuelle !== parametres.heureRappel) return;
 
+    const cle = maintenant.toISOString().slice(0, 10);
+    if (localStorage.getItem("rangeca_dernier_rappel") === cle) return;
 
-    // Exemple :
-    // 23h36
-    // à 23h36
-    // vers 23h36
+    const demain = new Date(maintenant);
+    demain.setDate(demain.getDate() + 1);
 
-    const heureMinutes =
-        t.match(
-            /(?:à|a|vers)?\s*(\d{1,2})h(\d{1,2})/
-        );
+    const dateDemain = [
+        demain.getFullYear(),
+        String(demain.getMonth() + 1).padStart(2, "0"),
+        String(demain.getDate()).padStart(2, "0")
+    ].join("-");
 
-
-    if (heureMinutes) {
-
-        const heure =
-            parseInt(
-                heureMinutes[1],
-                10
-            );
-
-        const minutes =
-            parseInt(
-                heureMinutes[2],
-                10
-            );
-
-
-        if (
-            heure >= 0 &&
-            heure <= 23 &&
-            minutes >= 0 &&
-            minutes <= 59
-        ) {
-
-            return (
-                String(heure).padStart(2, "0") +
-                ":" +
-                String(minutes).padStart(2, "0")
-            );
-
-        }
-
-    }
-
-
-    // Exemple :
-    // 23h
-    // à 23h
-
-    const heureSimple =
-        t.match(
-            /(?:à|a|vers)?\s*(\d{1,2})h\b/
-        );
-
-
-    if (heureSimple) {
-
-        const heure =
-            parseInt(
-                heureSimple[1],
-                10
-            );
-
-
-        if (
-            heure >= 0 &&
-            heure <= 23
-        ) {
-
-            return (
-                String(heure).padStart(2, "0") +
-                ":00"
-            );
-
-        }
-
-    }
-
-
-    return NOTIFICATION_HEURE_PAR_DEFAUT;
-
-}
-
-
-// ==========================================
-// ID NOTIFICATION
-// ==========================================
-
-function obtenirIdNotification(tache) {
-
-    return (
-        tache.texte +
-        "|" +
-        (tache.date || "") +
-        "|" +
-        (
-            tache.heure ||
-            NOTIFICATION_HEURE_PAR_DEFAUT
-        )
+    const rappels = taches.filter(t =>
+        !t.terminee && t.rappel && t.date === dateDemain
     );
 
+    if (rappels.length) {
+        new Notification("RangeÇa : rappels de demain 📅", {
+            body: `${rappels.length} tâche(s) prévue(s) demain.`
+        });
+    }
+
+    localStorage.setItem("rangeca_dernier_rappel", cle);
+}
+
+function enregistrerReglagesRappels() {
+    parametres.rappels = $("rappelGlobal").checked;
+    parametres.heureRappel = $("heureRappel").value || "18:00";
+
+    sauvegarder();
+    notifier("Réglages des rappels enregistrés !");
 }
 
 
-// ==========================================
-// NOTIFICATION DÉJÀ ENVOYÉE
-// ==========================================
+/* =====================================
+   IMPORT / EXPORT
+   ===================================== */
 
-function notificationDejaEnvoyee(id) {
+function exporterDonnees() {
+    const contenu = JSON.stringify(taches, null, 2);
 
-    const liste =
-        JSON.parse(
-            localStorage.getItem(
-                "rangeca_notifications_envoyees"
-            ) || "[]"
-        );
+    const fichier = new Blob([contenu], {
+        type: "application/json"
+    });
 
+    const url = URL.createObjectURL(fichier);
+    const lien = document.createElement("a");
 
-    return liste.includes(id);
+    lien.href = url;
+    lien.download = "rangeca-sauvegarde.json";
+    lien.click();
 
+    URL.revokeObjectURL(url);
+    notifier("Export terminé !");
 }
 
+function importerDonnees(fichier) {
+    if (!fichier) return;
 
-// ==========================================
-// MARQUER NOTIFICATION COMME ENVOYÉE
-// ==========================================
+    const lecteur = new FileReader();
 
-function marquerNotificationEnvoyee(id) {
+    lecteur.onload = () => {
+        try {
+            const donnees = JSON.parse(lecteur.result);
 
-    const liste =
-        JSON.parse(
-            localStorage.getItem(
-                "rangeca_notifications_envoyees"
-            ) || "[]"
-        );
-
-
-    if (!liste.includes(id)) {
-
-        liste.push(id);
-
-    }
-
-
-    localStorage.setItem(
-        "rangeca_notifications_envoyees",
-        JSON.stringify(liste)
-    );
-
-}
-
-
-// ==========================================
-// ENVOYER UNE NOTIFICATION
-// ==========================================
-
-async function envoyerNotification(tache) {
-
-    if (
-        !("Notification" in window) ||
-        Notification.permission !== "granted"
-    ) {
-
-        console.log(
-            "⚠️ Notifications non autorisées."
-        );
-
-        return;
-
-    }
-
-
-    const id =
-        obtenirIdNotification(tache);
-
-
-    if (
-        notificationDejaEnvoyee(id)
-    ) {
-
-        console.log(
-            "ℹ️ Notification déjà envoyée :",
-            tache.texte
-        );
-
-        return;
-
-    }
-
-
-    try {
-
-        const registration =
-            await navigator.serviceWorker.ready;
-
-
-        await registration.showNotification(
-            "🧹 RangeÇa",
-            {
-
-                body:
-                    "⏰ " +
-                    tache.texte,
-
-                icon:
-                    "./logorc.png",
-
-                badge:
-                    "./logorc.png",
-
-                tag:
-                    "rangeca-" +
-                    id,
-
-                requireInteraction:
-                    false
-
-            }
-        );
-
-
-        marquerNotificationEnvoyee(id);
-
-
-        console.log(
-            "🔔 Notification envoyée :",
-            tache.texte
-        );
-
-
-    } catch (erreur) {
-
-        console.error(
-            "❌ Erreur lors de l'envoi de la notification :",
-            erreur
-        );
-
-    }
-
-}
-
-
-// ==========================================
-// PROGRAMMER UNE NOTIFICATION
-// ==========================================
-
-function programmerNotification(tache) {
-
-    if (!tache.date) {
-
-        return;
-
-    }
-
-
-    if (
-        !("Notification" in window) ||
-        Notification.permission !== "granted"
-    ) {
-
-        return;
-
-    }
-
-
-    const heure =
-        tache.heure ||
-        NOTIFICATION_HEURE_PAR_DEFAUT;
-
-
-    const dateNotification =
-        new Date(
-            `${tache.date}T${heure}:00`
-        );
-
-
-    const maintenant =
-        new Date();
-
-
-    const difference =
-        dateNotification.getTime() -
-        maintenant.getTime();
-
-
-    if (difference <= 0) {
-
-        console.log(
-            "⏭️ Notification ignorée car l'heure est passée :",
-            tache.texte
-        );
-
-        return;
-
-    }
-
-
-    const id =
-        obtenirIdNotification(tache);
-
-
-    if (
-        notificationDejaEnvoyee(id)
-    ) {
-
-        return;
-
-    }
-
-
-    console.log(
-        "⏰ Notification programmée pour :",
-        dateNotification.toLocaleString("fr-FR"),
-        "→",
-        tache.texte
-    );
-
-
-    const timer =
-        setTimeout(
-            () => {
-
-                envoyerNotification(tache);
-
-            },
-            difference
-        );
-
-
-    timersNotifications.push(timer);
-
-}
-
-
-// ==========================================
-// PROGRAMMER TOUTES LES NOTIFICATIONS
-// ==========================================
-
-function programmerToutesLesNotifications() {
-
-    timersNotifications.forEach(
-        timer => clearTimeout(timer)
-    );
-
-
-    timersNotifications = [];
-
-
-    const taches =
-        JSON.parse(
-            localStorage.getItem(
-                "rangeca_taches"
-            ) || "[]"
-        );
-
-
-    if (
-        !("Notification" in window) ||
-        Notification.permission !== "granted"
-    ) {
-
-        return;
-
-    }
-
-
-    taches.forEach(
-        tache => {
-
-            if (!tache.terminee) {
-
-                programmerNotification(tache);
-
+            if (!Array.isArray(donnees)) {
+                throw new Error("Format invalide");
             }
 
+            const importer = donnees.map(t => ({
+                id: creerId(),
+                nom: String(t.nom || t.titre || "").trim(),
+                categorie: categories[t.categorie] ? t.categorie : "autre",
+                priorite: ["basse", "normale", "haute", "urgente"].includes(t.priorite)
+                    ? t.priorite : "normale",
+                date: t.date || "",
+                heure: t.heure || "",
+                description: String(t.description || ""),
+                rappel: Boolean(t.rappel),
+                terminee: Boolean(t.terminee),
+                creeLe: new Date().toISOString()
+            })).filter(t => t.nom);
+
+            taches = [...importer, ...taches];
+
+            sauvegarder();
+            actualiser();
+            notifier(`${importer.length} tâche(s) importée(s) !`);
+
+        } catch (e) {
+            notifier("Fichier invalide ou illisible.");
+            console.error(e);
         }
-    );
 
-}
-
-
-// ==========================================
-// PARAMÈTRES
-// ==========================================
-
-function ouvrirParametres() {
-
-    const menu =
-        document.getElementById(
-            "menuParametres"
-        );
-
-
-    if (!menu) return;
-
-
-    if (
-        menu.style.display === "block"
-    ) {
-
-        menu.style.display = "none";
-
-    } else {
-
-        menu.style.display = "block";
-
-    }
-
-}
-
-
-// ==========================================
-// CATÉGORIES
-// ==========================================
-
-function determinerCategorie(texte) {
-
-    const t =
-        texte.toLowerCase();
-
-
-    if (
-        t.includes("acheter") ||
-        t.includes("courses") ||
-        t.includes("lait") ||
-        t.includes("chaussures") ||
-        t.includes("achat")
-    ) {
-
-        return {
-            nom: "Achats",
-            emoji: "🛒"
-        };
-
-    }
-
-
-    if (
-        t.includes("cours") ||
-        t.includes("contrôle") ||
-        t.includes("controle") ||
-        t.includes("devoir") ||
-        t.includes("maths") ||
-        t.includes("anglais") ||
-        t.includes("français") ||
-        t.includes("francais") ||
-        t.includes("svt") ||
-        t.includes("ses") ||
-        t.includes("physique")
-    ) {
-
-        return {
-            nom: "École",
-            emoji: "📚"
-        };
-
-    }
-
-
-    if (
-        t.includes("jouer") ||
-        t.includes("gta") ||
-        t.includes("valorant") ||
-        t.includes("jeu") ||
-        t.includes("gaming") ||
-        t.includes("film") ||
-        t.includes("série") ||
-        t.includes("serie")
-    ) {
-
-        return {
-            nom: "Loisirs",
-            emoji: "🎮"
-        };
-
-    }
-
-
-    if (
-        t.includes("ranger") ||
-        t.includes("ménage") ||
-        t.includes("menage") ||
-        t.includes("nettoyer") ||
-        t.includes("chambre") ||
-        t.includes("maison")
-    ) {
-
-        return {
-            nom: "Maison",
-            emoji: "🏠"
-        };
-
-    }
-
-
-    if (
-        t.includes("sport") ||
-        t.includes("foot") ||
-        t.includes("football") ||
-        t.includes("courir") ||
-        t.includes("muscu") ||
-        t.includes("entraînement") ||
-        t.includes("entrainement")
-    ) {
-
-        return {
-            nom: "Sport",
-            emoji: "⚽"
-        };
-
-    }
-
-
-    if (
-        t.includes("rendez-vous") ||
-        t.includes("rendez vous") ||
-        t.includes("rdv") ||
-        t.includes("dentiste") ||
-        t.includes("médecin") ||
-        t.includes("medecin")
-    ) {
-
-        return {
-            nom: "Rendez-vous",
-            emoji: "📅"
-        };
-
-    }
-
-
-    return {
-        nom: "Autre",
-        emoji: "📦"
+        $("importerFichier").value = "";
     };
 
+    lecteur.readAsText(fichier);
 }
 
+function reinitialiserDonnees() {
+    if (!confirm("Attention : supprimer toutes tes tâches et tes paramètres ?")) return;
 
-// ==========================================
-// DÉTECTION DE DATE
-// ==========================================
+    if (!confirm("Dernière confirmation : cette action est définitive.")) return;
 
-function determinerDate(texte) {
-
-    const t =
-        texte.toLowerCase();
-
-
-    const aujourdHui =
-        new Date();
-
-
-    // ------------------------------------------
-    // Aujourd'hui
-    // ------------------------------------------
-
-    if (
-        t.includes("aujourd'hui") ||
-        t.includes("aujourd’hui")
-    ) {
-
-        return formatDate(
-            aujourdHui
-        );
-
-    }
-
-
-    // ------------------------------------------
-    // Demain
-    // ------------------------------------------
-
-    if (
-        t.includes("demain")
-    ) {
-
-        const date =
-            new Date(
-                aujourdHui
-            );
-
-
-        date.setDate(
-            date.getDate() + 1
-        );
-
-
-        return formatDate(date);
-
-    }
-
-
-    // ------------------------------------------
-    // Après-demain
-    // ------------------------------------------
-
-    if (
-        t.includes("après-demain") ||
-        t.includes("apres-demain") ||
-        t.includes("après demain") ||
-        t.includes("apres demain")
-    ) {
-
-        const date =
-            new Date(
-                aujourdHui
-            );
-
-
-        date.setDate(
-            date.getDate() + 2
-        );
-
-
-        return formatDate(date);
-
-    }
-
-
-    // ------------------------------------------
-    // Dans X jours
-    // ------------------------------------------
-
-    const dansJours =
-        t.match(
-            /dans\s+(\d+)\s+jours?/
-        );
-
-
-    if (dansJours) {
-
-        const nombre =
-            parseInt(
-                dansJours[1],
-                10
-            );
-
-
-        const date =
-            new Date(
-                aujourdHui
-            );
-
-
-        date.setDate(
-            date.getDate() + nombre
-        );
-
-
-        return formatDate(date);
-
-    }
-
-
-    // ------------------------------------------
-    // Dans X semaines
-    // ------------------------------------------
-
-    const dansSemaines =
-        t.match(
-            /dans\s+(\d+)\s+semaines?/
-        );
-
-
-    if (dansSemaines) {
-
-        const nombre =
-            parseInt(
-                dansSemaines[1],
-                10
-            );
-
-
-        const date =
-            new Date(
-                aujourdHui
-            );
-
-
-        date.setDate(
-            date.getDate() +
-            nombre * 7
-        );
-
-
-        return formatDate(date);
-
-    }
-
-
-    // ------------------------------------------
-    // Jours de la semaine
-    // ------------------------------------------
-
-    const joursSemaine = {
-
-        dimanche: 0,
-        lundi: 1,
-        mardi: 2,
-        mercredi: 3,
-        jeudi: 4,
-        vendredi: 5,
-        samedi: 6
-
+    taches = [];
+    parametres = {
+        nom: "",
+        theme: "sombre",
+        notifications: false,
+        rappels: false,
+        heureRappel: "18:00"
     };
 
-
-    for (
-        const jour in joursSemaine
-    ) {
-
-        if (
-            t.includes(jour)
-        ) {
-
-            const date =
-                new Date(
-                    aujourdHui
-                );
+    sauvegarder();
+    afficherParametres();
+    ouvrirPage("accueil");
+    notifier("Données réinitialisées.");
+}
 
 
-            const jourActuel =
-                date.getDay();
+/* =====================================
+   SUPABASE
+   ===================================== */
+
+async function synchroniser() {
+    notifier("La synchronisation Supabase nécessite la configuration de ton projet.");
+    $("statutSupabase").textContent =
+        "En attente de configuration Supabase (URL et clé API).";
+}
 
 
-            let difference =
-                joursSemaine[jour] -
-                jourActuel;
+/* =====================================
+   MENU MOBILE
+   ===================================== */
+
+function basculerMenu() {
+    $("sidebar").classList.toggle("ouverte");
+}
 
 
-            if (difference <= 0) {
+/* =====================================
+   ÉVÉNEMENTS DES BOUTONS
+   ===================================== */
 
-                difference += 7;
+function initialiserEvenements() {
 
-            }
+    // Navigation
+    document.querySelectorAll("[data-page]").forEach(btn => {
+        btn.addEventListener("click", () => {
+            ouvrirPage(btn.dataset.page);
+        });
+    });
 
+    // Catégories
+    document.querySelectorAll("[data-category]").forEach(btn => {
+        btn.addEventListener("click", () => {
+            afficherCategorie(btn.dataset.category);
+        });
+    });
 
-            date.setDate(
-                date.getDate() +
-                difference
-            );
+    $("ouvrirParametres").addEventListener("click", () => ouvrirPage("parametres"));
+    $("ouvrirParametresTop").addEventListener("click", () => ouvrirPage("parametres"));
 
+    $("voirToutes").addEventListener("click", () => ouvrirPage("toutes"));
 
-            return formatDate(date);
+    $("heroAjouter").addEventListener("click", () => {
+        $("zoneAjout").scrollIntoView({ behavior: "smooth" });
+        $("titreTache").focus();
+    });
 
+    $("menuMobile").addEventListener("click", basculerMenu);
+
+    // Formulaires
+    $("formTache").addEventListener("submit", ajouterTache);
+    $("formModification").addEventListener("submit", enregistrerModification);
+
+    // Actions sur les tâches : délégation d'événements
+    document.addEventListener("click", e => {
+        const bouton = e.target.closest("[data-action]");
+
+        if (bouton) {
+            traiterAction(bouton.dataset.action, bouton.dataset.id);
         }
+    });
 
-    }
+    // Modification
+    $("fermerModification").addEventListener("click", fermerModification);
 
+    $("modalModification").addEventListener("click", e => {
+        if (e.target === $("modalModification")) fermerModification();
+    });
 
-    // ------------------------------------------
-    // Dates françaises simples
-    // Exemple : 25 septembre
-    // ------------------------------------------
+    // Recherche et filtres
+    $("rechercheTache").addEventListener("input", afficherToutes);
+    $("filtreCategorie").addEventListener("change", afficherToutes);
+    $("filtreStatut").addEventListener("change", afficherToutes);
+    $("triTaches").addEventListener("change", afficherToutes);
 
-    const mois = {
+    // Tâches terminées
+    $("viderTerminees").addEventListener("click", () => {
+        if (!confirm("Supprimer toutes les tâches terminées ?")) return;
 
-        janvier: 0,
-        février: 1,
-        fevrier: 1,
-        mars: 2,
-        avril: 3,
-        mai: 4,
-        juin: 5,
-        juillet: 6,
-        août: 7,
-        aout: 7,
-        septembre: 8,
-        octobre: 9,
-        novembre: 10,
-        décembre: 11,
-        decembre: 11
+        taches = taches.filter(t => !t.terminee);
+        sauvegarder();
+        actualiser();
+        notifier("Tâches terminées supprimées.");
+    });
 
-    };
+    // Profil et réglages
+    $("sauvegarderProfil").addEventListener("click", sauvegarderProfil);
+    $("themeApplication").addEventListener("change", changerTheme);
 
+    $("rappelGlobal").addEventListener("change", enregistrerReglagesRappels);
+    $("heureRappel").addEventListener("change", enregistrerReglagesRappels);
 
-    const dateTexte =
-        t.match(
-            /(\d{1,2})\s+(janvier|février|fevrier|mars|avril|mai|juin|juillet|août|aout|septembre|octobre|novembre|décembre|decembre)/
-        );
+    // Notifications
+    $("activerNotifications").addEventListener("click", activerNotifications);
+    $("notificationBtn").addEventListener("click", () => {
+        ouvrirPage("parametres");
+        $("statutNotifications").scrollIntoView({ behavior: "smooth" });
+    });
 
+    // Données
+    $("exporterDonnees").addEventListener("click", exporterDonnees);
 
-    if (dateTexte) {
+    $("importerDonneesBtn").addEventListener("click", () => {
+        $("importerFichier").click();
+    });
 
-        const jour =
-            parseInt(
-                dateTexte[1],
-                10
-            );
+    $("importerFichier").addEventListener("change", e => {
+        importerDonnees(e.target.files[0]);
+    });
 
+    $("reinitialiserDonnees").addEventListener("click", reinitialiserDonnees);
 
-        const moisNom =
-            dateTexte[2];
-
-
-        const moisNumero =
-            mois[moisNom];
-
-
-        const date =
-            new Date(
-                aujourdHui.getFullYear(),
-                moisNumero,
-                jour
-            );
-
-
-        if (
-            date < aujourdHui
-        ) {
-
-            date.setFullYear(
-                date.getFullYear() + 1
-            );
-
-        }
-
-
-        return formatDate(date);
-
-    }
-
-
-    return null;
-
+    // Synchronisation
+    $("synchroniserBtn").addEventListener("click", synchroniser);
 }
 
 
-// ==========================================
-// FORMAT DATE
-// ==========================================
+/* =====================================
+   DÉMARRAGE
+   ===================================== */
 
-function formatDate(date) {
+function demarrerApplication() {
+    chargerDonnees();
+    initialiserEvenements();
+    afficherParametres();
+    actualiser();
+    ouvrirPage("accueil");
 
-    const annee =
-        date.getFullYear();
-
-
-    const mois =
-        String(
-            date.getMonth() + 1
-        ).padStart(
-            2,
-            "0"
-        );
-
-
-    const jour =
-        String(
-            date.getDate()
-        ).padStart(
-            2,
-            "0"
-        );
-
-
-    return (
-        `${annee}-${mois}-${jour}`
-    );
-
+    // Vérification périodique des rappels
+    setInterval(verifierRappels, 30000);
 }
 
-
-// ==========================================
-// STOCKAGE LOCAL
-// ==========================================
-
-const CLE_TACHES =
-    "rangeca_taches";
-
-
-// ==========================================
-// SUPPRIMER UNE TÂCHE
-// ==========================================
-
-function supprimerTache(index) {
-
-    const taches =
-        JSON.parse(
-            localStorage.getItem(
-                CLE_TACHES
-            ) || "[]"
-        );
-
-
-    taches.splice(
-        index,
-        1
-    );
-
-
-    localStorage.setItem(
-        CLE_TACHES,
-        JSON.stringify(taches)
-    );
-
-
-    afficherTaches();
-
-    programmerToutesLesNotifications();
-
-}
-
-
-// ==========================================
-// MODIFIER UNE TÂCHE
-// ==========================================
-
-function modifierTache(index) {
-
-    const taches =
-        JSON.parse(
-            localStorage.getItem(
-                CLE_TACHES
-            ) || "[]"
-        );
-
-
-    const tache =
-        taches[index];
-
-
-    const nouvelleValeur =
-        prompt(
-            "✏️ Modifier la tâche :",
-            tache.texte
-        );
-
-
-    if (
-        nouvelleValeur === null
-    ) {
-
-        return;
-
-    }
-
-
-    if (
-        nouvelleValeur.trim() === ""
-    ) {
-
-        return;
-
-    }
-
-
-    tache.texte =
-        nouvelleValeur.trim();
-
-
-    tache.categorie =
-        determinerCategorie(
-            nouvelleValeur
-        );
-
-
-    tache.date =
-        determinerDate(
-            nouvelleValeur
-        );
-
-
-    tache.heure =
-        determinerHeure(
-            nouvelleValeur
-        );
-
-
-    tache.terminee =
-        false;
-
-
-    localStorage.setItem(
-        CLE_TACHES,
-        JSON.stringify(taches)
-    );
-
-
-    afficherTaches();
-
-    programmerToutesLesNotifications();
-
-}
-
-
-// ==========================================
-// CHANGER ÉTAT TÂCHE
-// ==========================================
-
-function changerEtatTache(index) {
-
-    const taches =
-        JSON.parse(
-            localStorage.getItem(
-                CLE_TACHES
-            ) || "[]"
-        );
-
-
-    taches[index].terminee =
-        !taches[index].terminee;
-
-
-    localStorage.setItem(
-        CLE_TACHES,
-        JSON.stringify(taches)
-    );
-
-
-    afficherTaches();
-
-    programmerToutesLesNotifications();
-
-}
-
-
-// ==========================================
-// AFFICHER LES TÂCHES
-// ==========================================
-
-function afficherTaches() {
-
-    const resultat =
-        document.getElementById(
-            "resultat"
-        );
-
-
-    if (!resultat) return;
-
-
-    const taches =
-        JSON.parse(
-            localStorage.getItem(
-                CLE_TACHES
-            ) || "[]"
-        );
-
-
-    if (
-        taches.length === 0
-    ) {
-
-        resultat.innerHTML = `
-            <p class="empty">
-                Ton classement apparaîtra ici...
-            </p>
-        `;
-
-        return;
-
-    }
-
-
-    resultat.innerHTML = "";
-
-
-    taches.forEach(
-        (tache, index) => {
-
-            const div =
-                document.createElement(
-                    "div"
-                );
-
-
-            div.className =
-                "tache";
-
-
-            if (
-                tache.terminee
-            ) {
-
-                div.classList.add(
-                    "terminee"
-                );
-
-            }
-
-
-            let dateAffichage = "";
-
-
-            if (
-                tache.date
-            ) {
-
-                const date =
-                    new Date(
-                        `${tache.date}T00:00:00`
-                    );
-
-
-                dateAffichage =
-                    date.toLocaleDateString(
-                        "fr-FR",
-                        {
-                            weekday: "long",
-                            day: "numeric",
-                            month: "long"
-                        }
-                    );
-
-
-                if (
-                    tache.heure
-                ) {
-
-                    dateAffichage +=
-                        ` à ${tache.heure}`;
-
-                }
-
-            }
-
-
-            div.innerHTML = `
-
-                <div class="tache-gauche">
-
-                    <input
-                        type="checkbox"
-                        ${tache.terminee ? "checked" : ""}
-                        onchange="changerEtatTache(${index})"
-                    >
-
-                    <div>
-
-                        <div class="tache-texte">
-                            ${echapperHTML(tache.texte)}
-                        </div>
-
-                        <div class="tache-infos">
-
-                            ${tache.categorie.emoji}
-                            ${tache.categorie.nom}
-
-                            ${
-                                dateAffichage
-                                    ? ` • 📅 ${dateAffichage}`
-                                    : ""
-                            }
-
-                        </div>
-
-                    </div>
-
-                </div>
-
-
-                <div class="tache-actions">
-
-                    <button
-                        onclick="modifierTache(${index})"
-                        title="Modifier"
-                    >
-                        ✏️
-                    </button>
-
-                    <button
-                        onclick="supprimerTache(${index})"
-                        title="Supprimer"
-                    >
-                        🗑️
-                    </button>
-
-                </div>
-
-            `;
-
-
-            resultat.appendChild(
-                div
-            );
-
-        }
-    );
-
-}
-
-
-// ==========================================
-// PROTECTION HTML
-// ==========================================
-
-function echapperHTML(texte) {
-
-    const div =
-        document.createElement(
-            "div"
-        );
-
-
-    div.textContent =
-        texte;
-
-
-    return div.innerHTML;
-
-}
-
-
-// ==========================================
-// RANGER LES INFORMATIONS
-// ==========================================
-
-async function ranger() {
-
-    const textarea =
-        document.getElementById(
-            "texte"
-        );
-
-
-    if (!textarea) return;
-
-
-    const contenu =
-        textarea.value.trim();
-
-
-    if (!contenu) {
-
-        alert(
-            "✏️ Écris quelque chose à ranger !"
-        );
-
-        return;
-
-    }
-
-
-    const lignes =
-        contenu
-            .split("\n")
-            .map(
-                ligne => ligne.trim()
-            )
-            .filter(
-                ligne => ligne !== ""
-            );
-
-
-    const taches =
-        JSON.parse(
-            localStorage.getItem(
-                CLE_TACHES
-            ) || "[]"
-        );
-
-
-    for (
-        const ligne of lignes
-    ) {
-
-        const categorie =
-            determinerCategorie(
-                ligne
-            );
-
-
-        const date =
-            determinerDate(
-                ligne
-            );
-
-
-        const heure =
-            determinerHeure(
-                ligne
-            );
-
-
-        const nouvelleTache = {
-
-            texte:
-                ligne,
-
-            categorie:
-                categorie,
-
-            date:
-                date,
-
-            heure:
-                heure,
-
-            terminee:
-                false
-
-        };
-
-
-        taches.push(
-            nouvelleTache
-        );
-
-
-        // Sauvegarde Supabase
-
-        await sauvegarderTacheSupabase(
-            ligne,
-            categorie.nom,
-            date,
-            heure
-        );
-
-    }
-
-
-    localStorage.setItem(
-        CLE_TACHES,
-        JSON.stringify(taches)
-    );
-
-
-    textarea.value = "";
-
-
-    afficherTaches();
-
-
-    programmerToutesLesNotifications();
-
-
-    console.log(
-        "✅ Informations rangées :",
-        lignes
-    );
-
-}
-
-
-// ==========================================
-// SERVICE WORKER
-// ==========================================
-
-async function enregistrerServiceWorker() {
-
-    if (
-        !("serviceWorker" in navigator)
-    ) {
-
-        console.error(
-            "❌ Les Service Workers ne sont pas disponibles."
-        );
-
-        return null;
-
-    }
-
-
-    try {
-
-        const registration =
-            await navigator.serviceWorker.register(
-                "./service-worker.js?v=5",
-                {
-                    scope: "./"
-                }
-            );
-
-
-        console.log(
-            "✅ RangeÇa : Service Worker enregistré",
-            registration
-        );
-
-
-        await registration.update();
-
-
-        return registration;
-
-
-    } catch (erreur) {
-
-        console.error(
-            "❌ RangeÇa : impossible d'enregistrer le Service Worker",
-            erreur
-        );
-
-
-        return null;
-
-    }
-
-}
-
-
-// ==========================================
-// INITIALISATION
-// ==========================================
-
-window.addEventListener(
-    "load",
-    async () => {
-
-        console.log(
-            "🚀 RangeÇa démarre..."
-        );
-
-
-        afficherTaches();
-
-
-        mettreAJourBoutonNotifications();
-
-
-        await enregistrerServiceWorker();
-
-
-        await testerSupabase();
-
-
-        programmerToutesLesNotifications();
-
-    }
-);
-```
+demarrerApplication();
