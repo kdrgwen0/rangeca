@@ -3,12 +3,14 @@
 
 /* =====================================
    RANGEÇA — SCRIPT PRINCIPAL
+   Avec synchronisation Supabase
    ===================================== */
 
 const $ = (id) => document.getElementById(id);
 
 const STORAGE_KEY = "rangeca_taches";
 const SETTINGS_KEY = "rangeca_parametres";
+const DELETED_KEY = "rangeca_taches_supprimees";
 
 const categories = {
     ecole: "📚 École",
@@ -21,6 +23,7 @@ const categories = {
 };
 
 let taches = [];
+
 let parametres = {
     nom: "",
     theme: "sombre",
@@ -31,6 +34,10 @@ let parametres = {
 
 let pageActuelle = "accueil";
 let recherche = "";
+
+let synchronisationEnCours = false;
+let synchronisationDemandee = false;
+let temporisateurSync = null;
 
 
 /* =====================================
@@ -47,6 +54,7 @@ function chargerDonnees() {
 
     try {
         const reglages = JSON.parse(localStorage.getItem(SETTINGS_KEY));
+
         if (reglages && typeof reglages === "object") {
             parametres = { ...parametres, ...reglages };
         }
@@ -54,7 +62,6 @@ function chargerDonnees() {
         console.error("Erreur de chargement des paramètres", e);
     }
 
-    // Compatibilité avec les anciennes tâches
     taches = taches.map(t => ({
         ...t,
         id: String(t.id || creerId()),
@@ -69,7 +76,7 @@ function chargerDonnees() {
     }));
 }
 
-function sauvegarder() {
+function sauvegarder(synchroniserEnLigne = true) {
     try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(taches));
         localStorage.setItem(SETTINGS_KEY, JSON.stringify(parametres));
@@ -77,11 +84,271 @@ function sauvegarder() {
         notifier("Impossible de sauvegarder les données.");
         console.error(e);
     }
+
+    if (synchroniserEnLigne) {
+        programmerSynchronisation();
+    }
 }
 
 function creerId() {
     return window.crypto?.randomUUID?.() ||
         Date.now().toString(36) + Math.random().toString(36).slice(2);
+}
+
+
+/* =====================================
+   SUPABASE — SYNCHRONISATION
+   ===================================== */
+
+function afficherStatutSupabase(message) {
+    const element = $("statutSupabase");
+    if (element) element.textContent = message;
+}
+
+async function obtenirUtilisateur() {
+    if (typeof supabaseClient === "undefined") return null;
+
+    const { data, error } = await supabaseClient.auth.getUser();
+
+    if (error) {
+        console.error("Erreur utilisateur Supabase :", error);
+        return null;
+    }
+
+    return data.user || null;
+}
+
+function lireSuppressionsLocales() {
+    try {
+        const donnees = JSON.parse(localStorage.getItem(DELETED_KEY));
+        return Array.isArray(donnees) ? donnees : [];
+    } catch {
+        return [];
+    }
+}
+
+function enregistrerSuppressionLocale(id) {
+    const suppressions = lireSuppressionsLocales();
+
+    if (!suppressions.includes(id)) {
+        suppressions.push(id);
+    }
+
+    localStorage.setItem(DELETED_KEY, JSON.stringify(suppressions));
+}
+
+function supprimerSuppressionLocale(id) {
+    const suppressions = lireSuppressionsLocales()
+        .filter(element => element !== id);
+
+    localStorage.setItem(DELETED_KEY, JSON.stringify(suppressions));
+}
+
+async function envoyerSuppressionsEnAttente(userId) {
+    const suppressions = lireSuppressionsLocales();
+
+    for (const id of suppressions) {
+        const { error } = await supabaseClient
+            .from("taches")
+            .update({
+                supprimee: true,
+                updated_at: new Date().toISOString()
+            })
+            .eq("user_id", userId)
+            .eq("id", id);
+
+        if (error) {
+            console.error("Erreur de suppression cloud :", error);
+            continue;
+        }
+
+        supprimerSuppressionLocale(id);
+    }
+}
+
+async function envoyerTachesCloud(userId, liste = taches) {
+    if (!liste.length) return;
+
+    const lignes = liste.map(tache => ({
+        user_id: userId,
+        id: String(tache.id),
+        donnees: tache,
+        updated_at: new Date().toISOString(),
+        supprimee: false
+    }));
+
+    const { error } = await supabaseClient
+        .from("taches")
+        .upsert(lignes, {
+            onConflict: "user_id,id"
+        });
+
+    if (error) {
+        console.error("Erreur d'enregistrement Supabase :", error);
+        throw error;
+    }
+}
+
+async function synchroniser() {
+    if (synchronisationEnCours) {
+        synchronisationDemandee = true;
+        return;
+    }
+
+    if (typeof supabaseClient === "undefined") {
+        afficherStatutSupabase("Supabase n'est pas disponible.");
+        return;
+    }
+
+    synchronisationEnCours = true;
+    synchronisationDemandee = false;
+
+    try {
+        afficherStatutSupabase("Synchronisation en cours...");
+
+        const user = await obtenirUtilisateur();
+
+        if (!user) {
+            afficherStatutSupabase("Connecte-toi pour synchroniser tes tâches.");
+            return;
+        }
+
+        // Appliquer les suppressions effectuées hors connexion
+        await envoyerSuppressionsEnAttente(user.id);
+
+        // Récupérer les tâches du compte
+        let { data: lignes, error } = await supabaseClient
+            .from("taches")
+            .select("id, donnees, supprimee, updated_at")
+            .eq("user_id", user.id);
+
+        if (error) throw error;
+
+        lignes = lignes || [];
+
+        const identifiantsCloud = new Set(
+            lignes.map(ligne => String(ligne.id))
+        );
+
+        // Première connexion : importer les tâches locales
+        // Les nouvelles tâches locales absentes du cloud sont également ajoutées.
+        const tachesLocalesAEnvoyer = taches.filter(tache =>
+            !identifiantsCloud.has(String(tache.id))
+        );
+
+        if (tachesLocalesAEnvoyer.length) {
+            await envoyerTachesCloud(user.id, tachesLocalesAEnvoyer);
+
+            const resultat = await supabaseClient
+                .from("taches")
+                .select("id, donnees, supprimee, updated_at")
+                .eq("user_id", user.id);
+
+            if (resultat.error) throw resultat.error;
+
+            lignes = resultat.data || [];
+        }
+
+        // Récupérer uniquement les tâches non supprimées
+        const tachesCloud = lignes
+            .filter(ligne => !ligne.supprimee && ligne.donnees)
+            .map(ligne => ({
+                ...ligne.donnees,
+                id: String(ligne.id)
+            }));
+
+        taches = tachesCloud.map(t => ({
+            ...t,
+            id: String(t.id),
+            nom: String(t.nom || t.titre || "Tâche sans nom"),
+            categorie: categories[t.categorie] ? t.categorie : "autre",
+            priorite: t.priorite || "normale",
+            terminee: Boolean(t.terminee),
+            date: t.date || "",
+            heure: t.heure || "",
+            description: t.description || "",
+            rappel: Boolean(t.rappel)
+        }));
+
+        sauvegarder(false);
+        actualiser();
+
+        afficherStatutSupabase(
+            "Synchronisation réussie ! ☁️ " +
+            taches.length + " tâche(s) synchronisée(s)."
+        );
+
+    } catch (error) {
+        console.error("Erreur de synchronisation :", error);
+
+        afficherStatutSupabase(
+            "Erreur de synchronisation : " + error.message
+        );
+
+    } finally {
+        synchronisationEnCours = false;
+
+        if (synchronisationDemandee) {
+            synchronisationDemandee = false;
+            programmerSynchronisation();
+        }
+    }
+}
+
+function programmerSynchronisation() {
+    clearTimeout(temporisateurSync);
+
+    temporisateurSync = setTimeout(async () => {
+        const user = await obtenirUtilisateur();
+
+        if (!user) return;
+
+        try {
+            await envoyerSuppressionsEnAttente(user.id);
+            await envoyerTachesCloud(user.id);
+            afficherStatutSupabase("Tâches enregistrées dans le cloud ☁️");
+        } catch (error) {
+            console.error("Sauvegarde cloud impossible :", error);
+            afficherStatutSupabase("Erreur de sauvegarde cloud.");
+        }
+    }, 700);
+}
+
+async function supprimerTacheCloud(id) {
+    enregistrerSuppressionLocale(id);
+
+    const user = await obtenirUtilisateur();
+
+    if (!user) return;
+
+    const { error } = await supabaseClient
+        .from("taches")
+        .update({
+            supprimee: true,
+            updated_at: new Date().toISOString()
+        })
+        .eq("user_id", user.id)
+        .eq("id", String(id));
+
+    if (error) {
+        console.error("Erreur de suppression cloud :", error);
+        afficherStatutSupabase("Suppression en attente de synchronisation.");
+    } else {
+        supprimerSuppressionLocale(id);
+    }
+}
+
+// Réagir aux connexions et déconnexions
+if (typeof supabaseClient !== "undefined") {
+    supabaseClient.auth.onAuthStateChange((event) => {
+        if (event === "SIGNED_IN" || event === "INITIAL_SESSION") {
+            setTimeout(() => synchroniser(), 0);
+        }
+
+        if (event === "SIGNED_OUT") {
+            afficherStatutSupabase("Déconnecté : tâches conservées sur cet appareil.");
+        }
+    });
 }
 
 
@@ -328,6 +595,8 @@ function traiterAction(action, id) {
         if (!confirm("Supprimer cette tâche ?")) return;
 
         taches = taches.filter(t => t.id !== id);
+        supprimerTacheCloud(id);
+
         notifier("Tâche supprimée.");
     }
 
@@ -453,6 +722,7 @@ function afficherToutes() {
 
 function afficherAujourdhui() {
     const aujourdHui = new Date();
+
     const date = [
         aujourdHui.getFullYear(),
         String(aujourdHui.getMonth() + 1).padStart(2, "0"),
@@ -521,7 +791,9 @@ function afficherParametres() {
 function sauvegarderProfil() {
     parametres.nom = $("nomUtilisateur").value.trim();
     sauvegarder();
+
     notifier("Profil enregistré !");
+
     $("titrePage").textContent =
         `Bonjour${parametres.nom ? " " + parametres.nom : ""} 👋`;
 }
@@ -579,6 +851,7 @@ function mettreAJourNotifications() {
 
 function verifierRappels() {
     if (!parametres.notifications || !parametres.rappels) return;
+
     if (!("Notification" in window) || Notification.permission !== "granted") return;
 
     const maintenant = new Date();
@@ -590,6 +863,7 @@ function verifierRappels() {
     if (heureActuelle !== parametres.heureRappel) return;
 
     const cle = maintenant.toISOString().slice(0, 10);
+
     if (localStorage.getItem("rangeca_dernier_rappel") === cle) return;
 
     const demain = new Date(maintenant);
@@ -676,6 +950,7 @@ function importerDonnees(fichier) {
 
             sauvegarder();
             actualiser();
+
             notifier(`${importer.length} tâche(s) importée(s) !`);
 
         } catch (e) {
@@ -694,7 +969,12 @@ function reinitialiserDonnees() {
 
     if (!confirm("Dernière confirmation : cette action est définitive.")) return;
 
+    const anciennesTaches = [...taches];
+
+    anciennesTaches.forEach(t => enregistrerSuppressionLocale(t.id));
+
     taches = [];
+
     parametres = {
         nom: "",
         theme: "sombre",
@@ -704,20 +984,15 @@ function reinitialiserDonnees() {
     };
 
     sauvegarder();
+
+    const userPromise = obtenirUtilisateur().then(async user => {
+        if (user) await envoyerSuppressionsEnAttente(user.id);
+    }).catch(console.error);
+
     afficherParametres();
     ouvrirPage("accueil");
+
     notifier("Données réinitialisées.");
-}
-
-
-/* =====================================
-   SUPABASE
-   ===================================== */
-
-async function synchroniser() {
-    notifier("La synchronisation Supabase nécessite la configuration de ton projet.");
-    $("statutSupabase").textContent =
-        "En attente de configuration Supabase (URL et clé API).";
 }
 
 
@@ -766,7 +1041,7 @@ function initialiserEvenements() {
     $("formTache").addEventListener("submit", ajouterTache);
     $("formModification").addEventListener("submit", enregistrerModification);
 
-    // Actions sur les tâches : délégation d'événements
+    // Actions sur les tâches
     document.addEventListener("click", e => {
         const bouton = e.target.closest("[data-action]");
 
@@ -792,8 +1067,18 @@ function initialiserEvenements() {
     $("viderTerminees").addEventListener("click", () => {
         if (!confirm("Supprimer toutes les tâches terminées ?")) return;
 
+        const supprimees = taches.filter(t => t.terminee);
+
+        supprimees.forEach(t => enregistrerSuppressionLocale(t.id));
+
         taches = taches.filter(t => !t.terminee);
+
         sauvegarder();
+
+        obtenirUtilisateur().then(async user => {
+            if (user) await envoyerSuppressionsEnAttente(user.id);
+        }).catch(console.error);
+
         actualiser();
         notifier("Tâches terminées supprimées.");
     });
@@ -807,6 +1092,7 @@ function initialiserEvenements() {
 
     // Notifications
     $("activerNotifications").addEventListener("click", activerNotifications);
+
     $("notificationBtn").addEventListener("click", () => {
         ouvrirPage("parametres");
         $("statutNotifications").scrollIntoView({ behavior: "smooth" });
@@ -825,7 +1111,7 @@ function initialiserEvenements() {
 
     $("reinitialiserDonnees").addEventListener("click", reinitialiserDonnees);
 
-    // Synchronisation
+    // Synchronisation manuelle
     $("synchroniserBtn").addEventListener("click", synchroniser);
 }
 
@@ -843,6 +1129,9 @@ function demarrerApplication() {
 
     // Vérification périodique des rappels
     setInterval(verifierRappels, 30000);
+
+    // Vérifier si un utilisateur est déjà connecté
+    setTimeout(() => synchroniser(), 500);
 }
 
 demarrerApplication();
