@@ -894,6 +894,75 @@ body[data-theme="clair"] .task-action {
         right: 15px;
         bottom: 15px;
     }
+/* =====================================
+   COMPTE UTILISATEUR
+   ===================================== */
+
+.account-card {
+    border-color: rgba(129, 112, 245, .35);
+}
+
+.account-card > p {
+    color: var(--muted);
+    font-size: 13px;
+    margin-bottom: 18px;
+}
+
+.account-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.account-buttons button {
+    flex: 1;
+    min-width: 150px;
+}
+
+.account-connected {
+    color: var(--success);
+    font-size: 13px;
+    margin-bottom: 10px;
+}
+
+#connectedEmail {
+    display: block;
+    overflow-wrap: anywhere;
+    margin-bottom: 12px;
+    color: var(--primary-hover);
+}
+
+#authMessage {
+    margin-top: 15px;
+    line-height: 1.5;
+}
+
+#forgotButton {
+    margin-top: 15px;
+}
+
+#savePasswordButton {
+    width: 100%;
+}
+
+.account-card .hidden {
+    display: none;
+}
+
+body[data-theme="clair"] .account-card {
+    border-color: rgba(129, 112, 245, .3);
+}
+
+@media (max-width: 480px) {
+    .account-buttons {
+        flex-direction: column;
+    }
+
+    .account-buttons button {
+        width: 100%;
+    }
+}
+
 
     .toast {
         max-width: none;
