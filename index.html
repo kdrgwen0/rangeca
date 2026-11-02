@@ -13,6 +13,9 @@
     <link rel="manifest" href="./manifest.json">
     <link rel="stylesheet" href="./style.css">
 
+    <!-- Supabase et scripts RangeÇa -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+    <script src="./auth.js" defer></script>
     <script src="./script.js" defer></script>
 </head>
 
@@ -394,6 +397,7 @@
                 <p>Personnalise ton expérience RangeÇa.</p>
             </div>
 
+            <!-- MON PROFIL -->
             <div class="content-card">
 
                 <h3>👤 Mon profil</h3>
@@ -410,6 +414,94 @@
             </div>
 
 
+            <!-- MON COMPTE -->
+            <div class="content-card account-card">
+
+                <h3>🔐 Mon compte RangeÇa</h3>
+                <p>Crée ton compte pour retrouver ton espace personnel.</p>
+
+                <div id="authForm">
+
+                    <div class="form-group">
+                        <label for="authEmail">Adresse e-mail</label>
+                        <input
+                            type="email"
+                            id="authEmail"
+                            placeholder="ton@email.com"
+                            autocomplete="email"
+                        >
+                    </div>
+
+                    <div class="form-group">
+                        <label for="authPassword">Mot de passe</label>
+                        <input
+                            type="password"
+                            id="authPassword"
+                            placeholder="8 caractères minimum"
+                            autocomplete="current-password"
+                        >
+                    </div>
+
+                    <div class="account-buttons">
+
+                        <button id="signupButton" class="primary-button" type="button">
+                            Créer mon compte
+                        </button>
+
+                        <button id="loginButton" class="secondary-button" type="button">
+                            Se connecter
+                        </button>
+
+                    </div>
+
+                    <button id="forgotButton" class="text-button" type="button">
+                        Mot de passe oublié ?
+                    </button>
+
+                </div>
+
+
+                <div id="loggedAccount" class="hidden">
+
+                    <p class="account-connected">🟢 Tu es connecté avec :</p>
+
+                    <strong id="connectedEmail"></strong>
+
+                    <button id="logoutButton" class="danger-button" type="button">
+                        Se déconnecter
+                    </button>
+
+                </div>
+
+
+                <div id="resetPasswordBox" class="hidden">
+
+                    <div class="form-group">
+                        <label for="newPassword">Nouveau mot de passe</label>
+
+                        <input
+                            type="password"
+                            id="newPassword"
+                            placeholder="Nouveau mot de passe"
+                            autocomplete="new-password"
+                        >
+                    </div>
+
+                    <button id="savePasswordButton" class="primary-button" type="button">
+                        Enregistrer le nouveau mot de passe
+                    </button>
+
+                </div>
+
+
+                <p id="authMessage" class="setting-info" aria-live="polite">
+                    Aucun compte connecté.
+                </p>
+
+            </div>
+
+
+            <!-- NOTIFICATIONS -->
             <div class="content-card">
 
                 <h3>🔔 Notifications</h3>
@@ -437,6 +529,7 @@
             </div>
 
 
+            <!-- APPARENCE -->
             <div class="content-card">
 
                 <h3>🎨 Apparence</h3>
@@ -454,6 +547,7 @@
             </div>
 
 
+            <!-- SYNCHRONISATION -->
             <div class="content-card">
 
                 <h3>☁️ Synchronisation</h3>
@@ -471,6 +565,7 @@
             </div>
 
 
+            <!-- GESTION DES DONNÉES -->
             <div class="content-card">
 
                 <h3>🗑️ Gestion des données</h3>
@@ -497,6 +592,7 @@
                 </button>
 
             </div>
+
 
             <div class="about">
                 <h3>RangeÇa 🧹</h3>
