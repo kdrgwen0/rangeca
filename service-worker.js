@@ -1,5 +1,5 @@
-```javascript
-const CACHE_NAME = "rangeca-v5";
+
+const CACHE_NAME = "rangeca-v6";
 
 const fichiers = [
     "./",
@@ -43,26 +43,54 @@ self.addEventListener("fetch", event => {
     );
 });
 
+// Réception des notifications push
+self.addEventListener("push", event => {
+    let donnees = {};
+
+    if (event.data) {
+        try {
+            donnees = event.data.json();
+        } catch {
+            donnees = {
+                body: event.data.text()
+            };
+        }
+    }
+
+    const titre = donnees.title || "RangeÇa 🧹";
+
+    const options = {
+        body: donnees.body || "Tu as un rappel à consulter !",
+        icon: "./logorc.png",
+        badge: "./logorc.png",
+        data: {
+            url: donnees.url || "./"
+        }
+    };
+
+    event.waitUntil(
+        self.registration.showNotification(titre, options)
+    );
+});
+
+// Clic sur une notification
 self.addEventListener("notificationclick", event => {
     event.notification.close();
+
+    const url = event.notification.data?.url || "./";
 
     event.waitUntil(
         self.clients.matchAll({
             type: "window",
             includeUncontrolled: true
         }).then(clients => {
-
             for (const client of clients) {
                 if ("focus" in client) {
-                    return client.focus();
+                    return client.focus().then(() => client.navigate(url));
                 }
             }
 
-            if (self.clients.openWindow) {
-                return self.clients.openWindow("./");
-            }
-
+            return self.clients.openWindow(url);
         })
     );
 });
-```
