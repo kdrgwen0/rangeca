@@ -1,4 +1,3 @@
-
 const CACHE_NAME = "rangeca-v6";
 
 const fichiers = [
@@ -47,20 +46,18 @@ self.addEventListener("fetch", event => {
 self.addEventListener("push", event => {
     let donnees = {};
 
-    if (event.data) {
-        try {
-            donnees = event.data.json();
-        } catch {
-            donnees = {
-                body: event.data.text()
-            };
-        }
+    try {
+        donnees = event.data ? event.data.json() : {};
+    } catch (error) {
+        donnees = {
+            body: event.data ? event.data.text() : ""
+        };
     }
 
     const titre = donnees.title || "RangeÇa 🧹";
 
     const options = {
-        body: donnees.body || "Tu as un rappel à consulter !",
+        body: donnees.body || "Tu as une tâche à ne pas oublier !",
         icon: "./logorc.png",
         badge: "./logorc.png",
         data: {
@@ -84,13 +81,18 @@ self.addEventListener("notificationclick", event => {
             type: "window",
             includeUncontrolled: true
         }).then(clients => {
+
             for (const client of clients) {
                 if ("focus" in client) {
-                    return client.focus().then(() => client.navigate(url));
+                    client.navigate(url);
+                    return client.focus();
                 }
             }
 
-            return self.clients.openWindow(url);
+            if (self.clients.openWindow) {
+                return self.clients.openWindow(url);
+            }
+
         })
     );
 });
