@@ -1,4 +1,3 @@
-
 "use strict";
 
 /* =====================================
@@ -811,34 +810,110 @@ function changerTheme() {
 
 
 /* =====================================
-   NOTIFICATIONS
+   NOTIFICATIONS PUSH
    ===================================== */
 
+function convertirCleVapid(cle) {
+    const padding = "=".repeat((4 - cle.length % 4) % 4);
+    const base64 = (cle + padding)
+        .replace(/-/g, "+")
+        .replace(/_/g, "/");
+
+    const brut = atob(base64);
+
+    return Uint8Array.from(
+        brut,
+        caractere => caractere.charCodeAt(0)
+    );
+}
+
 async function activerNotifications() {
-    if (!("Notification" in window)) {
-        notifier("Ton navigateur ne prend pas en charge les notifications.");
+    if (
+        !("Notification" in window) ||
+        !("serviceWorker" in navigator) ||
+        !("PushManager" in window)
+    ) {
+        notifier("Ton navigateur ne prend pas en charge les notifications push.");
+        return;
+    }
+
+    if (typeof supabaseClient === "undefined") {
+        notifier("Connexion à Supabase indisponible.");
         return;
     }
 
     try {
+        const user = await obtenirUtilisateur();
+
+        if (!user) {
+            notifier("Connecte-toi pour activer les notifications.");
+            return;
+        }
+
         const permission = await Notification.requestPermission();
 
-        parametres.notifications = permission === "granted";
+        if (permission !== "granted") {
+            notifier("Autorisation de notification refusée.");
+            return;
+        }
+
+        const registration = await navigator.serviceWorker.ready;
+
+        let subscription =
+            await registration.pushManager.getSubscription();
+
+        if (!subscription) {
+            subscription = await registration.pushManager.subscribe({
+                userVisibleOnly: true,
+                applicationServerKey: convertirCleVapid(
+                    "BHVSj77WCtgklIsspdrPbRP0VyxjKMjt8MMJ_5M9YXWQedRQdqc_Z2oOe3EJpyCvFLE5JiXiL0qR_DxiLDCHpmQ"
+                )
+            });
+        }
+
+        const p256dh = subscription.getKey("p256dh");
+        const auth = subscription.getKey("auth");
+
+        if (!p256dh || !auth) {
+            throw new Error("Clés de l'abonnement introuvables.");
+        }
+
+        const encoder = bytes =>
+            btoa(String.fromCharCode(...new Uint8Array(bytes)));
+
+        const abonnement = {
+            user_id: user.id,
+            endpoint: subscription.endpoint,
+            p256dh: encoder(p256dh),
+            auth: encoder(auth)
+        };
+
+        const { data: existant, error: erreurLecture } =
+            await supabaseClient
+                .from("push_subscriptions")
+                .select("id")
+                .eq("endpoint", abonnement.endpoint)
+                .maybeSingle();
+
+        if (erreurLecture) throw erreurLecture;
+
+        if (!existant) {
+            const { error } = await supabaseClient
+                .from("push_subscriptions")
+                .insert(abonnement);
+
+            if (error) throw error;
+        }
+
+        parametres.notifications = true;
         sauvegarder();
         mettreAJourNotifications();
 
-        if (parametres.notifications) {
-            notifier("Notifications activées ! 🔔");
+        notifier("Notifications push activées ! 🔔");
 
-            new Notification("RangeÇa 🧹", {
-                body: "Tes notifications sont activées."
-            });
-        } else {
-            notifier("Autorisation de notification refusée.");
-        }
-    } catch (e) {
-        notifier("Impossible d'activer les notifications.");
-        console.error(e);
+    } catch (erreur) {
+        console.error("Erreur notifications push :", erreur);
+        notifier("Erreur : " + erreur.message);
     }
 }
 
