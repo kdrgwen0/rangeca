@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -689,6 +688,23 @@
     <p>RangeÇa 🧹 · Fait avec soin.</p>
 </footer>
 
+
+<!-- ENREGISTREMENT DU SERVICE WORKER -->
+<script>
+if ("serviceWorker" in navigator) {
+    window.addEventListener("load", async () => {
+        try {
+            const registration = await navigator.serviceWorker.register(
+                "./service-worker.js"
+            );
+
+            console.log("Service Worker enregistré !", registration.scope);
+        } catch (error) {
+            console.error("Erreur Service Worker :", error);
+        }
+    });
+}
+</script>
 
 </body>
 </html>
