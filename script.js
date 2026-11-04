@@ -1,3 +1,4 @@
+```javascript
 "use strict";
 
 /* =====================================
@@ -828,12 +829,25 @@ function convertirCleVapid(cle) {
 }
 
 async function activerNotifications() {
+    // iOS : les notifications Web Push fonctionnent uniquement
+    // dans une application web ajoutée à l'écran d'accueil.
+    const estIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+    const estInstallee =
+        window.matchMedia("(display-mode: standalone)").matches ||
+        navigator.standalone === true;
+
+    if (estIOS && !estInstallee) {
+        notifier("Sur iPhone, ajoute d'abord RangeÇa à l'écran d'accueil depuis Safari.");
+        return;
+    }
+
     if (
+        !window.isSecureContext ||
         !("Notification" in window) ||
         !("serviceWorker" in navigator) ||
         !("PushManager" in window)
     ) {
-        notifier("Ton navigateur ne prend pas en charge les notifications push.");
+        notifier("Les notifications push ne sont pas disponibles dans ce navigateur ou ce contexte.");
         return;
     }
 
@@ -843,6 +857,18 @@ async function activerNotifications() {
     }
 
     try {
+        // IMPORTANT : demander l'autorisation immédiatement depuis le clic.
+        // Sur iOS, attendre une opération réseau avant cette demande peut
+        // faire perdre le geste utilisateur exigé par Safari.
+        const permission = Notification.permission === "granted"
+            ? "granted"
+            : await Notification.requestPermission();
+
+        if (permission !== "granted") {
+            notifier("Autorisation refusée. Vérifie les réglages de notifications de RangeÇa.");
+            return;
+        }
+
         const user = await obtenirUtilisateur();
 
         if (!user) {
@@ -850,17 +876,14 @@ async function activerNotifications() {
             return;
         }
 
-        const permission = await Notification.requestPermission();
-
-        if (permission !== "granted") {
-            notifier("Autorisation de notification refusée.");
-            return;
-        }
-
+        // Attend le service worker déjà enregistré par l'application.
         const registration = await navigator.serviceWorker.ready;
 
-        let subscription =
-            await registration.pushManager.getSubscription();
+        if (!registration.pushManager) {
+            throw new Error("PushManager n'est pas disponible pour ce service worker.");
+        }
+
+        let subscription = await registration.pushManager.getSubscription();
 
         if (!subscription) {
             subscription = await registration.pushManager.subscribe({
@@ -875,7 +898,7 @@ async function activerNotifications() {
         const auth = subscription.getKey("auth");
 
         if (!p256dh || !auth) {
-            throw new Error("Clés de l'abonnement introuvables.");
+            throw new Error("Les clés de l'abonnement push sont introuvables.");
         }
 
         const encoder = bytes =>
@@ -888,16 +911,27 @@ async function activerNotifications() {
             auth: encoder(auth)
         };
 
-        const { data: existant, error: erreurLecture } =
-            await supabaseClient
-                .from("push_subscriptions")
-                .select("id")
-                .eq("endpoint", abonnement.endpoint)
-                .maybeSingle();
+        // Réutilise l'abonnement s'il existe déjà, sinon l'insère.
+        const { data: existant, error: erreurLecture } = await supabaseClient
+            .from("push_subscriptions")
+            .select("id")
+            .eq("endpoint", abonnement.endpoint)
+            .maybeSingle();
 
         if (erreurLecture) throw erreurLecture;
 
-        if (!existant) {
+        if (existant) {
+            const { error } = await supabaseClient
+                .from("push_subscriptions")
+                .update({
+                    user_id: abonnement.user_id,
+                    p256dh: abonnement.p256dh,
+                    auth: abonnement.auth
+                })
+                .eq("id", existant.id);
+
+            if (error) throw error;
+        } else {
             const { error } = await supabaseClient
                 .from("push_subscriptions")
                 .insert(abonnement);
@@ -910,10 +944,15 @@ async function activerNotifications() {
         mettreAJourNotifications();
 
         notifier("Notifications push activées ! 🔔");
+        console.log("RangeÇa : abonnement push enregistré.", {
+            plateforme: estIOS ? "iOS" : "Autre navigateur",
+            modeInstalle: estInstallee,
+            endpoint: subscription.endpoint
+        });
 
     } catch (erreur) {
         console.error("Erreur notifications push :", erreur);
-        notifier("Erreur : " + erreur.message);
+        notifier("Erreur notifications : " + (erreur.message || erreur));
     }
 }
 
