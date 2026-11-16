@@ -1,710 +1,266 @@
+
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" content="#151722">
-
-    <title>RangeÇa 🧹</title>
-    <meta name="description" content="Transforme ton bazar en quelque chose de clair.">
-
-    <link rel="icon" href="./logorc.png">
-    <link rel="manifest" href="./manifest.json">
-    <link rel="stylesheet" href="./style.css">
-
-    <!-- Supabase et scripts RangeÇa -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
-    <script src="./auth.js" defer></script>
-    <script src="./script.js" defer></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#6366f1">
+  <meta name="description" content="RangeÇa : transforme ton bazar en quelque chose de clair.">
+  <title>RangeÇa 🧹</title>
+  <link rel="manifest" href="./manifest.json">
+  <link rel="stylesheet" href="./style.css">
 </head>
-
 <body>
-
-<div class="app-container">
-
-    <!-- BARRE LATÉRALE -->
-    <aside class="sidebar" id="sidebar">
-
-        <div class="brand">
-            <span class="brand-icon">🧹</span>
-            <span>RangeÇa</span>
-        </div>
-
-        <div class="sidebar-menu">
-
-            <p class="menu-label">MENU PRINCIPAL</p>
-
-            <button class="menu-item active" id="accueilBtn" data-page="accueil" type="button">
-                <span>🏠</span> Accueil
-            </button>
-
-            <button class="menu-item" id="toutesBtn" data-page="toutes" type="button">
-                <span>📋</span> Toutes mes tâches
-            </button>
-
-            <button class="menu-item" id="aujourdhuiBtn" data-page="aujourdhui" type="button">
-                <span>📅</span> Aujourd'hui
-            </button>
-
-            <button class="menu-item" id="termineesBtn" data-page="terminees" type="button">
-                <span>✅</span> Terminées
-            </button>
-
-            <p class="menu-label">CATÉGORIES</p>
-
-            <button class="menu-item category-item" data-category="ecole" type="button">
-                <span>📚</span> École
-            </button>
-
-            <button class="menu-item category-item" data-category="achats" type="button">
-                <span>🛒</span> Achats
-            </button>
-
-            <button class="menu-item category-item" data-category="maison" type="button">
-                <span>🏠</span> Maison
-            </button>
-
-            <button class="menu-item category-item" data-category="sport" type="button">
-                <span>⚽</span> Sport
-            </button>
-
-            <button class="menu-item category-item" data-category="loisirs" type="button">
-                <span>🎮</span> Loisirs
-            </button>
-
-            <button class="menu-item category-item" data-category="rendezvous" type="button">
-                <span>📌</span> Rendez-vous
-            </button>
-
-            <button class="menu-item category-item" data-category="autre" type="button">
-                <span>📦</span> Autres
-            </button>
-
-        </div>
-
-        <div class="sidebar-bottom">
-
-            <button class="menu-item" id="ouvrirParametres" type="button">
-                <span>⚙️</span> Paramètres
-            </button>
-
-            <div class="sidebar-footer">
-                <span>RangeÇa 🧹</span>
-                <small>Version 2.0</small>
-            </div>
-
-        </div>
-
-    </aside>
-
-
-    <!-- CONTENU PRINCIPAL -->
-    <main class="main-content">
-
-        <!-- BARRE DU HAUT -->
-        <header class="topbar">
-
-            <button id="menuMobile" class="icon-button" type="button" aria-label="Ouvrir le menu">
-                ☰
-            </button>
-
-            <div class="welcome">
-                <h1 id="titrePage">Bonjour 👋</h1>
-                <p>Transforme ton bazar en quelque chose de clair.</p>
-            </div>
-
-            <div class="topbar-actions">
-
-                <button id="notificationBtn" class="icon-button" type="button" aria-label="Notifications">
-                    🔔
-                </button>
-
-                <button id="ouvrirParametresTop" class="profile-button" type="button">
-                    ⚙️
-                </button>
-
-            </div>
-
-        </header>
-
-
-        <!-- PAGE ACCUEIL -->
-        <section id="pageAccueil" class="page active">
-
-            <div class="hero-card">
-
-                <div class="hero-text">
-                    <span class="hero-label">TON ESPACE PERSONNEL</span>
-                    <h2>Organise ta journée.</h2>
-                    <p>Ajoute tes tâches, RangeÇa s'occupe de les organiser.</p>
-
-                    <button id="heroAjouter" class="primary-button" type="button">
-                        + Ajouter une tâche
-                    </button>
-                </div>
-
-                <div class="hero-illustration">
-                    🧹
-                </div>
-
-            </div>
-
-
-            <!-- STATISTIQUES -->
-            <div class="stats-grid">
-
-                <article class="stat-card">
-                    <span class="stat-icon">📋</span>
-                    <p>Total des tâches</p>
-                    <strong id="statTotal">0</strong>
-                </article>
-
-                <article class="stat-card">
-                    <span class="stat-icon">⏳</span>
-                    <p>À faire</p>
-                    <strong id="statActives">0</strong>
-                </article>
-
-                <article class="stat-card">
-                    <span class="stat-icon">✅</span>
-                    <p>Terminées</p>
-                    <strong id="statTerminees">0</strong>
-                </article>
-
-                <article class="stat-card">
-                    <span class="stat-icon">📊</span>
-                    <p>Progression</p>
-                    <strong id="statProgression">0%</strong>
-                </article>
-
-            </div>
-
-
-            <!-- AJOUT DE TÂCHES -->
-            <section class="content-card" id="zoneAjout">
-
-                <div class="section-heading">
-                    <div>
-                        <h2>Nouvelle tâche</h2>
-                        <p>Qu'as-tu besoin de faire ?</p>
-                    </div>
-                    <span>✨</span>
-                </div>
-
-                <form id="formTache">
-
-                    <div class="form-group">
-                        <label for="titreTache">Nom de la tâche</label>
-
-                        <input
-                            type="text"
-                            id="titreTache"
-                            placeholder="Ex : Faire mes devoirs..."
-                            maxlength="150"
-                            required
-                        >
-                    </div>
-
-                    <div class="form-row">
-
-                        <div class="form-group">
-                            <label for="categorieTache">Catégorie</label>
-
-                            <select id="categorieTache">
-                                <option value="autre">📦 Autres</option>
-                                <option value="ecole">📚 École</option>
-                                <option value="achats">🛒 Achats</option>
-                                <option value="maison">🏠 Maison</option>
-                                <option value="sport">⚽ Sport</option>
-                                <option value="loisirs">🎮 Loisirs</option>
-                                <option value="rendezvous">📌 Rendez-vous</option>
-                            </select>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="prioriteTache">Priorité</label>
-
-                            <select id="prioriteTache">
-                                <option value="normale">Normale</option>
-                                <option value="basse">Basse</option>
-                                <option value="haute">Haute</option>
-                                <option value="urgente">Urgente</option>
-                            </select>
-                        </div>
-
-                    </div>
-
-                    <div class="form-row">
-
-                        <div class="form-group">
-                            <label for="dateTache">Date limite</label>
-                            <input type="date" id="dateTache">
-                        </div>
-
-                        <div class="form-group">
-                            <label for="heureTache">Heure</label>
-                            <input type="time" id="heureTache">
-                        </div>
-
-                    </div>
-
-                    <div class="form-group">
-                        <label for="descriptionTache">Description (facultatif)</label>
-
-                        <textarea
-                            id="descriptionTache"
-                            placeholder="Ajoute quelques précisions..."
-                            rows="3"
-                            maxlength="1000"
-                        ></textarea>
-                    </div>
-
-                    <label class="checkbox-line">
-                        <input type="checkbox" id="rappelTache">
-                        <span>Activer un rappel pour cette tâche</span>
-                    </label>
-
-                    <button class="primary-button full-button" id="ajouterTacheBtn" type="submit">
-                        Ajouter à mes tâches ✨
-                    </button>
-
-                </form>
-
-            </section>
-
-
-            <!-- TÂCHES RÉCENTES -->
-            <section class="content-card">
-
-                <div class="section-heading">
-                    <div>
-                        <h2>Mes tâches</h2>
-                        <p>Voici ce qu'il te reste à faire.</p>
-                    </div>
-
-                    <button id="voirToutes" class="text-button" type="button">
-                        Tout voir →
-                    </button>
-                </div>
-
-                <div id="resultat">
-
-                    <div class="empty-state">
-                        <span>✨</span>
-                        <h3>Tout est propre ici !</h3>
-                        <p>Ajoute ta première tâche pour commencer.</p>
-                    </div>
-
-                </div>
-
-            </section>
-
-        </section>
-
-
-        <!-- PAGE TOUTES LES TÂCHES -->
-        <section id="pageToutes" class="page">
-
-            <div class="page-heading">
-                <h2>Toutes mes tâches</h2>
-                <p>Retrouve et organise toutes tes activités.</p>
-            </div>
-
-            <div class="content-card">
-
-                <div class="search-bar">
-                    <span>🔎</span>
-                    <input type="search" id="rechercheTache" placeholder="Rechercher une tâche...">
-                </div>
-
-                <div class="filter-row">
-
-                    <select id="filtreCategorie">
-                        <option value="toutes">Toutes les catégories</option>
-                        <option value="ecole">École</option>
-                        <option value="achats">Achats</option>
-                        <option value="maison">Maison</option>
-                        <option value="sport">Sport</option>
-                        <option value="loisirs">Loisirs</option>
-                        <option value="rendezvous">Rendez-vous</option>
-                        <option value="autre">Autres</option>
-                    </select>
-
-                    <select id="filtreStatut">
-                        <option value="toutes">Tous les statuts</option>
-                        <option value="actives">À faire</option>
-                        <option value="terminees">Terminées</option>
-                    </select>
-
-                    <select id="triTaches">
-                        <option value="recentes">Plus récentes</option>
-                        <option value="anciennes">Plus anciennes</option>
-                        <option value="priorite">Priorité</option>
-                        <option value="date">Date limite</option>
-                    </select>
-
-                </div>
-
-                <div id="listeToutes"></div>
-
-            </div>
-
-        </section>
-
-
-        <!-- PAGE AUJOURD'HUI -->
-        <section id="pageAujourdhui" class="page">
-
-            <div class="page-heading">
-                <h2>Aujourd'hui 📅</h2>
-                <p>Concentre-toi sur ce qui compte maintenant.</p>
-            </div>
-
-            <div class="content-card">
-                <div id="listeAujourdhui"></div>
-            </div>
-
-        </section>
-
-
-        <!-- PAGE TERMINÉES -->
-        <section id="pageTerminees" class="page">
-
-            <div class="page-heading">
-                <h2>Tâches terminées ✅</h2>
-                <p>Retrouve tout ce que tu as accompli.</p>
-            </div>
-
-            <div class="content-card">
-
-                <div id="listeTerminees"></div>
-
-                <button id="viderTerminees" class="danger-button" type="button">
-                    Supprimer toutes les tâches terminées
-                </button>
-
-            </div>
-
-        </section>
-
-
-        <!-- PAGE PARAMÈTRES -->
-        <section id="pageParametres" class="page">
-
-            <div class="page-heading">
-                <h2>Paramètres ⚙️</h2>
-                <p>Personnalise ton expérience RangeÇa.</p>
-            </div>
-
-            <!-- MON PROFIL -->
-            <div class="content-card">
-
-                <h3>👤 Mon profil</h3>
-
-                <div class="form-group">
-                    <label for="nomUtilisateur">Mon prénom</label>
-                    <input type="text" id="nomUtilisateur" placeholder="Ton prénom">
-                </div>
-
-                <button id="sauvegarderProfil" class="primary-button" type="button">
-                    Enregistrer mon profil
-                </button>
-
-            </div>
-
-
-            <!-- MON COMPTE -->
-            <div class="content-card account-card">
-
-                <h3>🔐 Mon compte RangeÇa</h3>
-                <p>Crée ton compte pour retrouver ton espace personnel.</p>
-
-                <div id="authForm">
-
-                    <div class="form-group">
-                        <label for="authEmail">Adresse e-mail</label>
-                        <input
-                            type="email"
-                            id="authEmail"
-                            placeholder="ton@email.com"
-                            autocomplete="email"
-                        >
-                    </div>
-
-                    <div class="form-group">
-                        <label for="authPassword">Mot de passe</label>
-                        <input
-                            type="password"
-                            id="authPassword"
-                            placeholder="8 caractères minimum"
-                            autocomplete="current-password"
-                        >
-                    </div>
-
-                    <div class="account-buttons">
-
-                        <button id="signupButton" class="primary-button" type="button">
-                            Créer mon compte
-                        </button>
-
-                        <button id="loginButton" class="secondary-button" type="button">
-                            Se connecter
-                        </button>
-
-                    </div>
-
-                    <button id="forgotButton" class="text-button" type="button">
-                        Mot de passe oublié ?
-                    </button>
-
-                </div>
-
-
-                <div id="loggedAccount" class="hidden">
-
-                    <p class="account-connected">🟢 Tu es connecté avec :</p>
-
-                    <strong id="connectedEmail"></strong>
-
-                    <button id="logoutButton" class="danger-button" type="button">
-                        Se déconnecter
-                    </button>
-
-                </div>
-
-
-                <div id="resetPasswordBox" class="hidden">
-
-                    <div class="form-group">
-                        <label for="newPassword">Nouveau mot de passe</label>
-
-                        <input
-                            type="password"
-                            id="newPassword"
-                            placeholder="Nouveau mot de passe"
-                            autocomplete="new-password"
-                        >
-                    </div>
-
-                    <button id="savePasswordButton" class="primary-button" type="button">
-                        Enregistrer le nouveau mot de passe
-                    </button>
-
-                </div>
-
-
-                <p id="authMessage" class="setting-info" aria-live="polite">
-                    Aucun compte connecté.
-                </p>
-
-            </div>
-
-
-            <!-- NOTIFICATIONS -->
-            <div class="content-card">
-
-                <h3>🔔 Notifications</h3>
-
-                <p>Autorise RangeÇa à envoyer des notifications.</p>
-
-                <button id="activerNotifications" class="primary-button" type="button">
-                    Activer les notifications
-                </button>
-
-                <p id="statutNotifications" class="setting-info">
-                    Notifications non configurées.
-                </p>
-
-                <label class="checkbox-line">
-                    <input type="checkbox" id="rappelGlobal">
-                    <span>Activer les rappels automatiques</span>
-                </label>
-
-                <div class="form-group">
-                    <label for="heureRappel">Heure des rappels</label>
-                    <input type="time" id="heureRappel" value="18:00">
-                </div>
-
-            </div>
-
-
-            <!-- APPARENCE -->
-            <div class="content-card">
-
-                <h3>🎨 Apparence</h3>
-
-                <div class="form-group">
-                    <label for="themeApplication">Thème</label>
-
-                    <select id="themeApplication">
-                        <option value="sombre">Sombre</option>
-                        <option value="clair">Clair</option>
-                        <option value="systeme">Automatique</option>
-                    </select>
-                </div>
-
-            </div>
-
-
-            <!-- SYNCHRONISATION -->
-            <div class="content-card">
-
-                <h3>☁️ Synchronisation</h3>
-
-                <p>Retrouve tes données sur tes différents appareils.</p>
-
-                <div id="statutSupabase" class="setting-info">
-                    Synchronisation non configurée.
-                </div>
-
-                <button id="synchroniserBtn" class="secondary-button" type="button">
-                    Synchroniser maintenant
-                </button>
-
-            </div>
-
-
-            <!-- GESTION DES DONNÉES -->
-            <div class="content-card">
-
-                <h3>🗑️ Gestion des données</h3>
-
-                <p>Attention : ces actions peuvent être définitives.</p>
-
-                <button id="exporterDonnees" class="secondary-button" type="button">
-                    Exporter mes tâches
-                </button>
-
-                <button id="importerDonneesBtn" class="secondary-button" type="button">
-                    Importer des tâches
-                </button>
-
-                <input
-                    type="file"
-                    id="importerFichier"
-                    accept=".json,application/json"
-                    hidden
-                >
-
-                <button id="reinitialiserDonnees" class="danger-button" type="button">
-                    Réinitialiser mes données
-                </button>
-
-            </div>
-
-
-            <div class="about">
-                <h3>RangeÇa 🧹</h3>
-                <p>Transforme ton bazar en quelque chose de clair.</p>
-                <small>Version 2.0</small>
-            </div>
-
-        </section>
-
-    </main>
-
-</div>
-
-
-<!-- FENÊTRE DE MODIFICATION -->
-<div class="modal-overlay" id="modalModification" hidden>
-
-    <div class="modal">
-
-        <div class="modal-header">
-            <h2>Modifier la tâche</h2>
-
-            <button id="fermerModification" class="icon-button" type="button" aria-label="Fermer">
-                ✕
-            </button>
-        </div>
-
-        <form id="formModification">
-
-            <input type="hidden" id="modifierId">
-
-            <div class="form-group">
-                <label for="modifierTitre">Nom</label>
-                <input type="text" id="modifierTitre" required maxlength="150">
-            </div>
-
-            <div class="form-group">
-                <label for="modifierCategorie">Catégorie</label>
-
-                <select id="modifierCategorie">
-                    <option value="autre">Autres</option>
-                    <option value="ecole">École</option>
-                    <option value="achats">Achats</option>
-                    <option value="maison">Maison</option>
-                    <option value="sport">Sport</option>
-                    <option value="loisirs">Loisirs</option>
-                    <option value="rendezvous">Rendez-vous</option>
-                </select>
-            </div>
-
-            <div class="form-group">
-                <label for="modifierPriorite">Priorité</label>
-
-                <select id="modifierPriorite">
-                    <option value="normale">Normale</option>
-                    <option value="basse">Basse</option>
-                    <option value="haute">Haute</option>
-                    <option value="urgente">Urgente</option>
-                </select>
-            </div>
-
-            <div class="form-group">
-                <label for="modifierDate">Date limite</label>
-                <input type="date" id="modifierDate">
-            </div>
-
-            <div class="form-group">
-                <label for="modifierHeure">Heure</label>
-                <input type="time" id="modifierHeure">
-            </div>
-
-            <div class="form-group">
-                <label for="modifierDescription">Description</label>
-                <textarea id="modifierDescription" rows="3"></textarea>
-            </div>
-
-            <button class="primary-button full-button" type="submit">
-                Enregistrer les modifications
-            </button>
-
-        </form>
-
+<div class="app">
+
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">🧹 <span>RangeÇa</span></div>
+    <p class="side-label">ESPACE PERSONNEL</p>
+
+    <nav>
+      <button class="menu-item active" data-page="accueil">🏠 Accueil</button>
+      <button class="menu-item" data-page="toutes">📋 Toutes les tâches</button>
+      <button class="menu-item" data-page="aujourdhui">📅 Aujourd'hui</button>
+      <button class="menu-item" data-page="terminees">✅ Terminées</button>
+      <button class="menu-item" data-page="parametres">⚙️ Paramètres</button>
+    </nav>
+
+    <div class="sidebar-bottom">
+      <span>RangeÇa v2.1</span>
+      <span>Fait avec soin 💜</span>
     </div>
+  </aside>
 
+  <main class="main">
+    <header class="topbar">
+      <button class="icon-button mobile-menu" id="mobileMenu" aria-label="Menu">☰</button>
+      <div>
+        <h1 id="titrePage">Bonjour 👋</h1>
+        <p>Transforme ton bazar en quelque chose de clair.</p>
+      </div>
+      <button class="icon-button" id="quickSettings" aria-label="Paramètres">⚙️</button>
+    </header>
+
+    <section class="page active" id="pageAccueil">
+      <div class="hero">
+        <div>
+          <span class="eyebrow">TON ESPACE PERSONNEL</span>
+          <h2>Organise ta journée.</h2>
+          <p>Chaque petite tâche accomplie te rapproche de tes objectifs.</p>
+          <button class="primary-button" id="heroAjouter">＋ Ajouter une tâche</button>
+        </div>
+        <div class="hero-emoji">🧹</div>
+      </div>
+
+      <div class="stats-grid">
+        <article class="stat-card"><span>📋</span><p>Total</p><strong id="statTotal">0</strong></article>
+        <article class="stat-card"><span>⏳</span><p>À faire</p><strong id="statActives">0</strong></article>
+        <article class="stat-card"><span>✅</span><p>Terminées</p><strong id="statTerminees">0</strong></article>
+        <article class="stat-card"><span>📊</span><p>Progression</p><strong id="statProgression">0%</strong></article>
+      </div>
+
+      <section class="content-card" id="zoneAjout">
+        <div class="section-heading">
+          <div><h2>Nouvelle tâche</h2><p>Qu'as-tu besoin de faire ?</p></div>
+          <span>✨</span>
+        </div>
+
+        <form id="formTache">
+          <div class="form-group">
+            <label for="titreTache">Nom de la tâche *</label>
+            <input id="titreTache" maxlength="150" required placeholder="Ex : Faire mes devoirs...">
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="categorieTache">Catégorie</label>
+              <select id="categorieTache">
+                <option value="ecole">📚 École</option>
+                <option value="achats">🛒 Achats</option>
+                <option value="maison">🏠 Maison</option>
+                <option value="sport">⚽ Sport</option>
+                <option value="loisirs">🎮 Loisirs</option>
+                <option value="rendezvous">📌 Rendez-vous</option>
+                <option value="autre">📦 Autres</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="prioriteTache">Priorité</label>
+              <select id="prioriteTache">
+                <option value="normale">Normale</option>
+                <option value="basse">Basse</option>
+                <option value="haute">Haute</option>
+                <option value="urgente">Urgente</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="dateTache">Date limite</label>
+              <input type="date" id="dateTache">
+            </div>
+            <div class="form-group">
+              <label for="heureTache">Heure</label>
+              <input type="time" id="heureTache">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="descriptionTache">Description facultative</label>
+            <textarea id="descriptionTache" rows="3" maxlength="1000" placeholder="Quelques précisions..."></textarea>
+          </div>
+
+          <label class="checkbox-line">
+            <input type="checkbox" id="rappelTache">
+            Activer un rappel pour cette tâche
+          </label>
+
+          <button class="primary-button full-button" type="submit">Ajouter à mes tâches ✨</button>
+        </form>
+      </section>
+
+      <section class="content-card">
+        <div class="section-heading">
+          <div><h2>Mes tâches</h2><p>Les tâches à accomplir.</p></div>
+          <button class="text-button" data-go="toutes">Tout voir →</button>
+        </div>
+        <div id="resultat"></div>
+      </section>
+    </section>
+
+    <section class="page" id="pageToutes">
+      <div class="page-heading"><h2>Toutes mes tâches</h2><p>Retrouve et organise toutes tes activités.</p></div>
+      <section class="content-card">
+        <div class="form-group">
+          <label for="rechercheTache">Rechercher</label>
+          <input type="search" id="rechercheTache" placeholder="Rechercher une tâche...">
+        </div>
+        <div class="filter-row">
+          <select id="filtreCategorie">
+            <option value="toutes">Toutes les catégories</option>
+            <option value="ecole">École</option><option value="achats">Achats</option>
+            <option value="maison">Maison</option><option value="sport">Sport</option>
+            <option value="loisirs">Loisirs</option><option value="rendezvous">Rendez-vous</option>
+            <option value="autre">Autres</option>
+          </select>
+          <select id="filtreStatut">
+            <option value="toutes">Tous les statuts</option>
+            <option value="actives">À faire</option><option value="terminees">Terminées</option>
+          </select>
+          <select id="triTaches">
+            <option value="recentes">Plus récentes</option>
+            <option value="anciennes">Plus anciennes</option>
+            <option value="priorite">Priorité</option>
+            <option value="date">Date limite</option>
+          </select>
+        </div>
+        <div id="listeToutes"></div>
+      </section>
+    </section>
+
+    <section class="page" id="pageAujourdhui">
+      <div class="page-heading"><h2>Aujourd'hui 📅</h2><p>Concentre-toi sur ce qui compte maintenant.</p></div>
+      <section class="content-card"><div id="listeAujourdhui"></div></section>
+    </section>
+
+    <section class="page" id="pageTerminees">
+      <div class="page-heading"><h2>Tâches terminées ✅</h2><p>Retrouve tout ce que tu as accompli.</p></div>
+      <section class="content-card">
+        <div id="listeTerminees"></div>
+        <button class="danger-button" id="viderTerminees">Supprimer toutes les tâches terminées</button>
+      </section>
+    </section>
+
+    <section class="page" id="pageParametres">
+      <div class="page-heading"><h2>Paramètres ⚙️</h2><p>Personnalise ton expérience RangeÇa.</p></div>
+
+      <section class="content-card">
+        <h2>👤 Mon profil</h2>
+        <div class="form-group">
+          <label for="nomUtilisateur">Mon prénom</label>
+          <input id="nomUtilisateur" maxlength="40" placeholder="Ton prénom">
+        </div>
+        <button class="primary-button" id="sauvegarderProfil">Enregistrer mon profil</button>
+      </section>
+
+      <section class="content-card">
+        <h2>🎨 Apparence</h2>
+        <div class="form-group">
+          <label for="themeApplication">Thème</label>
+          <select id="themeApplication">
+            <option value="sombre">Sombre</option>
+            <option value="clair">Clair</option>
+          </select>
+        </div>
+      </section>
+
+      <section class="content-card">
+        <h2>🔔 Notifications</h2>
+        <p>Les rappels nécessitent l'autorisation de ton navigateur.</p>
+        <button class="primary-button" id="activerNotifications">Activer les notifications</button>
+        <p id="statutNotifications" class="setting-info">Notifications non configurées.</p>
+        <label class="checkbox-line"><input type="checkbox" id="rappelGlobal"> Activer les rappels automatiques</label>
+        <div class="form-group">
+          <label for="heureRappel">Heure des rappels</label>
+          <input type="time" id="heureRappel" value="18:00">
+        </div>
+        <button class="secondary-button" id="sauvegarderRappels">Enregistrer les rappels</button>
+      </section>
+
+      <section class="content-card">
+        <h2>💾 Gestion des données</h2>
+        <p>Conserve une copie de tes tâches ou restaure une sauvegarde.</p>
+        <div class="button-stack">
+          <button class="secondary-button" id="exporterDonnees">Exporter mes tâches</button>
+          <button class="secondary-button" id="importerDonneesBtn">Importer des tâches</button>
+          <input type="file" id="importerFichier" accept=".json,application/json" hidden>
+          <button class="danger-button" id="reinitialiserDonnees">Réinitialiser mes données</button>
+        </div>
+      </section>
+
+      <section class="content-card">
+        <h2>ℹ️ À propos</h2>
+        <p><strong>RangeÇa 🧹</strong></p>
+        <p>Transforme ton bazar en quelque chose de clair.</p>
+        <p class="setting-info">Version 2.1</p>
+      </section>
+    </section>
+
+    <footer>RangeÇa 🧹 · Fait avec soin.</footer>
+  </main>
 </div>
 
+<div class="modal-overlay" id="modalModification" hidden>
+  <div class="modal">
+    <div class="modal-header">
+      <h2>Modifier la tâche</h2>
+      <button class="icon-button" id="fermerModification" type="button">✕</button>
+    </div>
+    <form id="formModification">
+      <input type="hidden" id="modifierId">
+      <div class="form-group"><label for="modifierTitre">Nom</label><input id="modifierTitre" required maxlength="150"></div>
+      <div class="form-group"><label for="modifierCategorie">Catégorie</label>
+        <select id="modifierCategorie">
+          <option value="ecole">École</option><option value="achats">Achats</option>
+          <option value="maison">Maison</option><option value="sport">Sport</option>
+          <option value="loisirs">Loisirs</option><option value="rendezvous">Rendez-vous</option><option value="autre">Autres</option>
+        </select>
+      </div>
+      <div class="form-group"><label for="modifierPriorite">Priorité</label>
+        <select id="modifierPriorite"><option value="normale">Normale</option><option value="basse">Basse</option><option value="haute">Haute</option><option value="urgente">Urgente</option></select>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label for="modifierDate">Date</label><input type="date" id="modifierDate"></div>
+        <div class="form-group"><label for="modifierHeure">Heure</label><input type="time" id="modifierHeure"></div>
+      </div>
+      <div class="form-group"><label for="modifierDescription">Description</label><textarea id="modifierDescription" rows="3"></textarea></div>
+      <button class="primary-button full-button" type="submit">Enregistrer les modifications</button>
+    </form>
+  </div>
+</div>
 
-<!-- NOTIFICATIONS / MESSAGES -->
-<div id="toastContainer" class="toast-container" aria-live="polite" aria-atomic="true"></div>
-
-
-<!-- PIED DE PAGE -->
-<footer class="app-footer">
-    <p>RangeÇa 🧹 · Fait avec soin.</p>
-</footer>
-
-
-<!-- ENREGISTREMENT DU SERVICE WORKER -->
-<script>
-if ("serviceWorker" in navigator) {
-    window.addEventListener("load", async () => {
-        try {
-            const registration = await navigator.serviceWorker.register(
-                "./service-worker.js"
-            );
-
-            console.log("Service Worker enregistré !", registration.scope);
-        } catch (error) {
-            console.error("Erreur Service Worker :", error);
-        }
-    });
-}
-</script>
-
+<div id="toastContainer" class="toast-container" aria-live="polite"></div>
+<script src="./script.js" defer></script>
 </body>
 </html>
